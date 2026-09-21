@@ -1,44 +1,17 @@
-## 1.2.6
-- Fixed GitHub Actions build failure caused by a stale package-lock.json left from older versions.
-- The Windows workflow now detects version/dependency mismatches in package-lock.json and regenerates it automatically from package.json before npm ci.
-- This specifically recovers missing Knowledge dependencies such as mammoth and pdfjs-dist without requiring manual repository cleanup.
-- Preserves the Nexa AI logo, chat scrollbar, floating Ir al final button, Knowledge Libraries, memory and performance profiles.
-
-## 1.2.6
-- Fixed App Builder parsing failure in `src/app.js` by removing JavaScript regular-expression literals from renderer code while preserving identical behavior.
-- Kept the conversation scrollbar and translucent `↓ Ir al final` button.
-- Kept the new Nexa AI logo bundled for the application window, installer, Start Menu and desktop shortcut.
-- Added an explicit validation guard so future packages fail if regex literals are accidentally reintroduced into `src/app.js`.
-
-## 1.2.6
-- Fixed the conversation viewport with a dedicated visible chat scrollbar.
-- Added a semi-transparent floating “Ir al final” button that appears when the user scrolls away from the newest messages.
-- Preserved manual scroll position while the assistant streams new text; automatic follow resumes only when the user is near the bottom or taps the button.
-- Bundled the new Nexa AI logo for in-app branding, Windows installer, application executable and desktop shortcut.
-
-## 1.2.0
-- Added a visible scrollable conversation experience with a dedicated semi-transparent "Ir al final" floating button.
-- Added premium Nexa AI desktop branding and bundled application icon assets for the app window, installer and desktop shortcut.
-- Improved in-app brand presentation in the sidebar and welcome screen using the new Nexa AI logo.
-
 # Changelog
 
-## 1.1.0
+## 1.3.0
+- Added real persistent SQLite knowledge database: `nexa-knowledge.db`.
+- Added structured Knowledge Objectives, including an Automotive template with 37 baseline systems/topics created as `MISSING`.
+- Added knowledge status lifecycle: VERIFIED, PARTIAL, MISSING, CONFLICTING, OUTDATED and NOT VERIFIED.
+- Added source traceability, confidence, versions, duplicate detection and research audit records.
+- Added Internet research controls and manual “Completar faltantes” / topic research.
+- Added local-first chat research: when one objective is attached to the chat and local knowledge is insufficient, Nexa can search, validate with the local model, persist validated knowledge and then answer.
+- Added “Guardar en conocimiento” on chat messages; it writes to the SQLite database rather than only changing UI state.
+- Preserved document Knowledge Libraries, chat memory, custom chat scrollbar, transparent “Ir al final” button and Nexa desktop logo.
+- Knowledge remains outside model weights so future local models can reuse the same database.
 
-- Added model-independent Knowledge Libraries stored outside Ollama model weights.
-- Added separate local `Knowledge/registry.json`, `Documents/` and `Index/` stores.
-- Added PDF page extraction through pdfjs-dist.
-- Added DOCX text extraction through mammoth.
-- Added text/code/config file and recursive folder ingestion.
-- Added SHA-256 duplicate detection for imported files.
-- Added local chunking/indexing and bounded retrieval for chat prompts.
-- Added source-grounding prompt and source chips under responses.
-- Added per-library activation and per-chat library selection.
-- Added manual local Knowledge search panel.
-- Added Knowledge injection settings.
-- Preserved Fast/Light modes, Unity monitoring, chats, memories and offline operation.
-- Raised application version to 1.1.0.
-
-## 1.0.0
-
-- Initial local Ollama control center.
+## 1.2.6
+- Added dedicated in-app chat scrollbar rail and draggable thumb.
+- Kept the semi-transparent “Ir al final” button visible inside the chat viewport.
+- Added visible installed-build version next to the Nexa AI brand.

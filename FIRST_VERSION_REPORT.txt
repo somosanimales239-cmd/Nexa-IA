@@ -1,29 +1,21 @@
-Nexa AI 1.2.6 update source prepared.
+Nexa AI 1.3.0 complete update source prepared.
 
-Baseline preserved:
-- Local Ollama / gpt-oss chat
-- Persistent chats and manual memory
-- Fast / Light GPU profiles
-- Unity-aware hardware monitoring
-- Offline operation
+Major additions:
+- persistent SQLite knowledge database
+- structured learning/research objectives
+- automotive missing-knowledge template
+- web research + local Ollama validation
+- source traceability and confidence
+- non-destructive knowledge versioning
+- chat “Guardar en conocimiento” writes to persistent DB
+- model-independent knowledge usable by future models
 
-New in 1.2.6:
-- Model-independent Knowledge Libraries
-- Separate local Knowledge storage
-- PDF and DOCX ingestion
-- Plain-text/code/folder ingestion
-- Local chunk index and bounded retrieval
-- Per-chat library selection
-- Source metadata/chips
-- Knowledge search tester
-- Future-model portability (e.g. 120B can reuse the same Data + Knowledge)
-
-Static validation performed before delivery:
-- node --check main.js: PASS
-- node --check preload.js: PASS
-- node --check src/app.js: PASS
-- node --test scripts/nexa-baseline.test.js: 10/10 PASS
-- validate-delivery.js: PASS
-- validate-project.js: PASS
-
-Runtime dependencies pdfjs-dist and mammoth are declared in package.json. package-lock.json is intentionally omitted so the existing Nexa build workflow can generate a fresh portable lock before install.
+Preserved:
+- local Ollama chat
+- offline operation when web research is not needed
+- memory and chat history
+- document Knowledge Libraries
+- fast/light GPU profiles
+- Unity detection
+- custom chat scrollbar and jump-to-bottom button
+- Nexa AI branded desktop/installer logo

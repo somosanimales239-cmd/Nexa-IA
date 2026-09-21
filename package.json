@@ -1,14 +1,14 @@
 {
   "name": "nexa-ai-local",
-  "version": "1.2.6",
-  "description": "Nexa AI - local AI with model-independent Knowledge Libraries, persistent memory, premium desktop branding and a custom always-visible chat scrollbar",
+  "version": "1.3.0",
+  "description": "Nexa AI - local AI with persistent model-independent SQLite knowledge, document libraries, source-traced web research, memory and Ollama control",
   "main": "main.js",
   "author": "Nexa AI",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "build:linux": "npm run validate && electron-builder --linux AppImage deb --publish never",
     "build:mac": "npm run validate && electron-builder --mac dmg zip --publish never",
@@ -17,7 +17,8 @@
     "test": "node --test scripts/nexa-baseline.test.js",
     "ui:smoke": "electron scripts/ui-smoke.js",
     "validate:renderer": "node scripts/validate-renderer-compat.js",
-    "validate:chat-scroll": "node scripts/validate-chat-scroll.js"
+    "validate:chat-scroll": "node scripts/validate-chat-scroll.js",
+    "validate:knowledge": "node scripts/validate-persistent-knowledge.js"
   },
   "devDependencies": {
     "electron": "43.1.0",
@@ -35,7 +36,8 @@
       "preload.js",
       "src/**/*",
       "package.json",
-      "assets/**/*"
+      "assets/**/*",
+      "lib/**/*"
     ],
     "win": {
       "target": [

@@ -14,7 +14,7 @@
         <div class="brand-mark brand-logo-shell"><img class="brand-logo" src="../assets/logo-128.png" alt="Nexa AI" /></div>
         <div>
           <div class="brand-name">Nexa AI</div>
-          <div class="brand-sub">Local Intelligence <span id="brandVersion" class="brand-version">v1.2.6</span></div>
+          <div class="brand-sub">Local Intelligence <span id="brandVersion" class="brand-version">v1.3.0</span></div>
         </div>
       </div>
 
@@ -142,7 +142,39 @@
       </section>
 
       <section class="panel" data-panel-view="knowledge" data-testid="knowledge-panel">
-        <div class="panel-intro"><strong>Knowledge Libraries</strong><br />Importa libros, manuales, PDFs, DOCX, texto o código. Nexa los indexa localmente y los futuros modelos pueden reutilizar el mismo conocimiento.</div>
+        <div class="panel-intro"><strong>Conocimiento persistente + Internet</strong><br />“Guardar en conocimiento” escribe realmente en <strong>nexa-knowledge.db</strong>. Los objetivos detectan faltantes, pueden investigar en Internet, validar fuentes y conservar versiones sin modificar el modelo.</div>
+
+        <div class="knowledge-db-card">
+          <div class="card-topline"><span>Base persistente</span><span id="knowledgeDbBadge" class="badge lime">SQLite</span></div>
+          <strong id="knowledgeDbStats">0 entradas</strong>
+          <small id="knowledgeDbPath">Cargando ruta…</small>
+        </div>
+
+        <div class="section-label">Objetivos de aprendizaje</div>
+        <form id="objectiveForm" class="objective-form">
+          <select id="objectiveType">
+            <option value="automotive">Automotive</option>
+            <option value="general">General / Science / Other</option>
+          </select>
+          <input id="objectiveName" placeholder="Nombre del objetivo (opcional en Automotive)" maxlength="160" />
+          <div id="objectiveAutomotiveFields" class="objective-auto-fields">
+            <div class="settings-grid"><input id="objectiveMake" placeholder="Fabricante: Toyota" /><input id="objectiveModel" placeholder="Modelo: Corolla" /></div>
+            <div class="settings-grid"><input id="objectiveYear" type="number" min="1900" max="2100" placeholder="Año: 2021" /><input id="objectiveEngine" placeholder="Motor: M20A-FKS" /></div>
+            <div class="settings-grid"><input id="objectiveDisplacement" placeholder="Cilindrada: 2.0L" /><input id="objectiveTransmission" placeholder="Transmisión / CVT" /></div>
+            <div class="settings-grid"><input id="objectiveMarket" placeholder="Mercado: US" /><input id="objectiveTrim" placeholder="Trim (opcional)" /></div>
+          </div>
+          <textarea id="objectiveDescription" rows="2" placeholder="Descripción / alcance. Para ciencia: tema, disciplina, objetivos, etc."></textarea>
+          <button class="primary full" type="submit">+ Crear objetivo persistente</button>
+        </form>
+
+        <div id="researchProgress" class="research-progress" hidden>
+          <div class="progress-top"><span id="researchProgressText">Investigando…</span><span id="researchProgressState">WEB</span></div>
+          <div class="research-flow">LOCAL → SEARCH → VERIFY → STORE → ANSWER</div>
+        </div>
+        <div id="objectiveList" class="objective-list"></div>
+
+        <div class="section-label knowledge-section-separator">Document Libraries</div>
+        <div class="panel-intro">Importa libros, manuales, PDFs, DOCX, texto o código. Nexa los indexa localmente y los futuros modelos pueden reutilizar el mismo conocimiento.</div>
         <form id="libraryForm" class="library-form">
           <input id="libraryName" data-testid="library-name" placeholder="Nombre: Toyota Corolla 2021" maxlength="120" />
           <input id="libraryCategory" placeholder="Categoría: Automotive / Science / Unity" maxlength="80" />
@@ -161,8 +193,8 @@
         <div id="libraryList" class="library-list" data-testid="library-list"></div>
 
         <div class="knowledge-test">
-          <div class="section-label">Probar búsqueda local</div>
-          <div class="inline-search"><input id="knowledgeSearchInput" placeholder="Ej: torque alternator Corolla" /><button id="knowledgeSearchBtn" class="secondary small" type="button">Buscar</button></div>
+          <div class="section-label">Buscar en conocimiento persistente + documentos</div>
+          <div class="inline-search"><input id="knowledgeSearchInput" placeholder="Ej: P0302 Corolla 2021 M20A-FKS" /><button id="knowledgeSearchBtn" class="secondary small" type="button">Buscar</button></div>
           <div id="knowledgeSearchResults" class="knowledge-search-results"></div>
         </div>
         <button id="openKnowledgeBtn" class="secondary full" type="button">Abrir carpeta Knowledge</button>
@@ -182,13 +214,20 @@
             <label>Chunks Knowledge<input id="settingKnowledgeChunks" type="number" min="1" max="20" /></label>
             <label>Chars Knowledge<input id="settingKnowledgeChars" type="number" min="1500" max="24000" step="500" /></label>
           </div>
+          <div class="settings-note web-settings-note"><strong>Investigación web</strong><p>Cuando está activa, Nexa puede buscar faltantes de los objetivos, validar la información con el modelo local y guardar solo conocimiento con fuente y trazabilidad.</p></div>
+          <label class="toggle-row"><input id="settingInternetResearch" type="checkbox" /><span>Permitir investigación por Internet</span></label>
+          <label class="toggle-row"><input id="settingAutoResearch" type="checkbox" /><span>Si el conocimiento local es insuficiente, investigar automáticamente en el objetivo activo del chat</span></label>
+          <div class="settings-grid">
+            <label>Fuentes web máx.<input id="settingWebSources" type="number" min="1" max="10" /></label>
+            <label>Faltantes por lote<input id="settingResearchBatch" type="number" min="1" max="10" /></label>
+          </div>
           <label>Keep alive<input id="settingKeepAlive" placeholder="5m" /></label>
           <label class="toggle-row"><input id="settingAutoUnity" type="checkbox" /><span>Cambiar automáticamente a Ligero al detectar Unity</span></label>
           <button class="primary full" type="submit" data-testid="save-settings">Guardar ajustes</button>
           <button id="openDataBtn" class="secondary full" type="button">Abrir carpeta de datos</button>
         </form>
         <div class="settings-note"><strong>Datos independientes del modelo</strong><p>Chats y memoria viven en Data. Knowledge Libraries viven en Knowledge. Instalar otro modelo, por ejemplo 120B, no cambia estos datos.</p></div>
-        <div class="version-line">Nexa AI <span id="versionLabel">v1.2.4</span></div>
+        <div class="version-line">Nexa AI <span id="versionLabel">v1.3.0</span></div>
       </section>
     </aside>
   </div>

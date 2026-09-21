@@ -5,6 +5,8 @@ const state = {
   chats: [],
   memories: [],
   libraries: [],
+  objectives: [],
+  knowledgeDbStats: null,
   knowledgeRoot: '',
   currentChatId: null,
   activeRequestId: null,
@@ -90,7 +92,7 @@ function ensureChat() {
   if (chat) return chat;
   chat = {
     id: uid('chat'), title: 'Nuevo chat', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    libraryIds: [], messages: [],
+    libraryIds: [], objectiveIds: [], messages: [],
   };
   state.chats.unshift(chat);
   state.currentChatId = chat.id;
@@ -213,8 +215,11 @@ function sourceChips(message) {
   if (!Array.isArray(message.sources) || !message.sources.length) return '';
   var chips = message.sources.map(function (source) {
     var page = source.page ? ' p.' + source.page : '';
-    return '<span class="source-chip" title="' + escapeHtml(source.path || '') + '">▣ ' +
-      escapeHtml(source.documentName || source.libraryName || 'Fuente') + page + '</span>';
+    var isWeb = Boolean(source.url || source.sourceType);
+    var label = source.documentName || source.libraryName || (isWeb ? 'Fuente web' : 'Fuente');
+    var title = source.url || source.path || '';
+    var cls = isWeb ? 'source-chip web-source' : 'source-chip';
+    return '<span class="' + cls + '" title="' + escapeHtml(title) + '">▣ ' + escapeHtml(label) + page + '</span>';
   }).join('');
   return '<div class="source-row">' + chips + '</div>';
 }
@@ -240,6 +245,7 @@ function renderCurrentChat() {
         ${sourceChips(message)}
         <div class="message-actions">
           <button class="message-action" data-memory-message="${escapeHtml(message.id)}">Guardar en memoria</button>
+          <button class="message-action" data-knowledge-message="${escapeHtml(message.id)}">Guardar en conocimiento</button>
           <button class="message-action" data-copy-message="${escapeHtml(message.id)}">Copiar</button>
         </div>
       </div>
@@ -295,6 +301,7 @@ async function sendMessage() {
     const result = await window.nexa.chat.start({
       requestId,
       libraryIds: Array.isArray(chat.libraryIds) ? chat.libraryIds : [],
+      objectiveIds: Array.isArray(chat.objectiveIds) ? chat.objectiveIds : [],
       messages: chat.messages.filter(message => message.id !== state.activeAssistantMessageId).map(message => ({ role:message.role, content:message.content })),
     });
     if (!result?.ok) throw new Error(result?.error || 'No se pudo iniciar la respuesta.');
@@ -378,6 +385,135 @@ async function saveMemory(text) {
   state.memories.unshift(saved); renderMemories(); toast('Memoria guardada localmente.','success');
 }
 
+
+function selectedObjectiveIdsForChat(chat = currentChat()) {
+  if (!chat || !Array.isArray(chat.objectiveIds)) return [];
+  return chat.objectiveIds.filter(function (id) { return state.objectives.some(function (obj) { return obj.id === id && obj.enabled !== false; }); });
+}
+
+async function refreshPersistentKnowledge() {
+  var result = await Promise.all([window.nexa.knowledgeDb.objectives(), window.nexa.knowledgeDb.stats()]);
+  state.objectives = Array.isArray(result[0]) ? result[0] : [];
+  state.knowledgeDbStats = result[1] || null;
+  renderPersistentKnowledge();
+  renderLibraries();
+}
+
+function objectiveSubtitle(obj) {
+  if (obj.type === 'automotive') {
+    return [obj.make, obj.model, obj.year, obj.engine_code || obj.engine_displacement, obj.transmission, obj.market].filter(Boolean).join(' • ');
+  }
+  return [obj.category, obj.description].filter(Boolean).join(' • ').slice(0, 180);
+}
+
+function renderPersistentKnowledge() {
+  var stats = state.knowledgeDbStats || {};
+  if (els.knowledgeDbStats) els.knowledgeDbStats.textContent = String(stats.active_entries || 0) + ' entradas activas • ' + String(stats.verified_entries || 0) + ' verificadas • ' + String(stats.knowledge_sources || 0) + ' fuentes';
+  if (els.knowledgeDbPath) els.knowledgeDbPath.textContent = stats.dbPath || 'D\\LocalAI\\NexaAI\\Data\\nexa-knowledge.db';
+  if (!els.objectiveList) return;
+  if (!state.objectives.length) {
+    els.objectiveList.innerHTML = '<div class="empty-list">Todavía no hay objetivos. Crea uno para que Nexa pueda detectar qué conocimiento falta y completarlo.</div>';
+    return;
+  }
+  var selectedIds = selectedObjectiveIdsForChat();
+  els.objectiveList.innerHTML = state.objectives.map(function (obj) {
+    var selected = selectedIds.includes(obj.id);
+    var subtitle = objectiveSubtitle(obj);
+    return '<article class="objective-card" data-objective-id="' + escapeHtml(obj.id) + '">' +
+      '<div class="objective-head"><div><strong>' + escapeHtml(obj.name) + '</strong><small>' + escapeHtml(subtitle || obj.type) + '</small></div>' +
+      '<span class="badge ' + (obj.type === 'automotive' ? 'blue' : 'muted') + '">' + escapeHtml(String(obj.type || 'general').toUpperCase()) + '</span></div>' +
+      '<div class="objective-status-grid">' +
+        '<div class="objective-stat"><strong>' + Number(obj.verified_count || 0) + '</strong><small>VERIFIED</small></div>' +
+        '<div class="objective-stat"><strong>' + Number(obj.partial_count || 0) + '</strong><small>PARTIAL</small></div>' +
+        '<div class="objective-stat"><strong>' + Number(obj.missing_count || 0) + '</strong><small>MISSING</small></div>' +
+        '<div class="objective-stat"><strong>' + Number(obj.entry_count || 0) + '</strong><small>ENTRIES</small></div>' +
+      '</div>' +
+      '<label class="objective-chat-toggle"><input type="checkbox" data-objective-chat="' + escapeHtml(obj.id) + '" ' + (selected ? 'checked' : '') + ' ' + (obj.enabled === false ? 'disabled' : '') + '/><span>Usar este objetivo en el chat</span></label>' +
+      '<div class="objective-topic-row"><input data-topic-input="' + escapeHtml(obj.id) + '" placeholder="Tema específico: P0302 / Fuel Pressure / Quantum mechanics"/><button class="tiny research-button" data-research-topic="' + escapeHtml(obj.id) + '">Investigar</button></div>' +
+      '<div class="objective-actions"><button class="tiny research-button" data-research-missing="' + escapeHtml(obj.id) + '">Completar faltantes</button>' +
+      '<button class="tiny" data-toggle-objective="' + escapeHtml(obj.id) + '">' + (obj.enabled === false ? 'Activar' : 'Pausar') + '</button>' +
+      '<button class="tiny danger" data-delete-objective="' + escapeHtml(obj.id) + '">Eliminar</button></div>' +
+      '</article>';
+  }).join('');
+}
+
+async function saveMessageToKnowledge(message) {
+  var selectedIds = selectedObjectiveIdsForChat();
+  if (!selectedIds.length) {
+    toast('Selecciona “Usar este objetivo en el chat” antes de guardar conocimiento.','error');
+    showPanel('knowledge');
+    return;
+  }
+  if (selectedIds.length > 1) {
+    toast('Selecciona un solo objetivo para guardar este mensaje sin mezclar conocimiento.','error');
+    showPanel('knowledge');
+    return;
+  }
+  var objective = state.objectives.find(function (obj) { return obj.id === selectedIds[0]; });
+  if (!objective) return;
+  var suggested = normalizeWhitespace(message.content).slice(0, 90) || 'Knowledge from chat';
+  var topic = window.prompt('Tema para guardar en el conocimiento persistente:', suggested);
+  if (!topic || !topic.trim()) return;
+  var result = await window.nexa.knowledgeDb.save({
+    objective_id: objective.id,
+    system: objective.type === 'automotive' ? 'User / Chat Knowledge' : objective.category || 'General',
+    subsystem: '', topic: topic.trim(),
+    summary: message.content,
+    content: { text:message.content, origin_role:message.role, chat_id:state.currentChatId },
+    confidence: message.role === 'assistant' ? 0.60 : 0.70,
+    verification_status: 'PARTIAL',
+    source: { name:'Nexa AI chat', title:'Manual save from chat', url:'', source_type:'User / Chat', access_date:new Date().toISOString(), license_note:'User explicitly requested persistent storage.' },
+  });
+  await refreshPersistentKnowledge();
+  toast(result?.duplicate ? 'Ese conocimiento ya existía; se actualizó la metadata.' : 'Guardado realmente en nexa-knowledge.db.','success');
+}
+
+async function createObjectiveFromForm(event) {
+  event.preventDefault();
+  var type = els.objectiveType.value === 'automotive' ? 'automotive' : 'general';
+  var input = {
+    type:type, name:els.objectiveName.value.trim(), description:els.objectiveDescription.value.trim(),
+    make:els.objectiveMake.value.trim(), model:els.objectiveModel.value.trim(), year:Number(els.objectiveYear.value)||null,
+    engine_code:els.objectiveEngine.value.trim(), engine_displacement:els.objectiveDisplacement.value.trim(),
+    transmission:els.objectiveTransmission.value.trim(), market:els.objectiveMarket.value.trim(), trim:els.objectiveTrim.value.trim(),
+  };
+  if (type === 'general' && !input.name) return toast('Escribe un nombre para el objetivo general.','error');
+  try {
+    var created = await window.nexa.knowledgeDb.createObjective(input);
+    var chat = ensureChat();
+    chat.objectiveIds = [created.id];
+    await persistChat(chat);
+    els.objectiveName.value=''; els.objectiveDescription.value='';
+    await refreshPersistentKnowledge();
+    toast('Objetivo creado en la base persistente.','success');
+  } catch (error) { toast(error.message || String(error),'error'); }
+}
+
+async function runObjectiveResearch(objectiveId, topic) {
+  var clean = String(topic || '').trim();
+  if (!clean) return toast('Escribe un tema para investigar.','error');
+  els.researchProgress.hidden = false;
+  els.researchProgressText.textContent = 'Buscando y validando: ' + clean;
+  els.researchProgressState.textContent = 'WEB';
+  var result = await window.nexa.research.topic(objectiveId, clean, {});
+  await refreshPersistentKnowledge();
+  if (result?.ok && result?.saved) toast('Investigación validada y escrita en nexa-knowledge.db.','success');
+  else if (result?.ok) toast('Se investigó, pero no se guardó como confirmado: ' + (result.verification_status || 'NOT VERIFIED'));
+  else toast(result?.error || 'La investigación no pudo completarse.','error');
+  setTimeout(function () { els.researchProgress.hidden = true; }, 1800);
+}
+
+async function runMissingResearch(objectiveId) {
+  els.researchProgress.hidden = false;
+  els.researchProgressText.textContent = 'Completando conocimiento faltante…';
+  els.researchProgressState.textContent = 'WEB';
+  var result = await window.nexa.research.missing(objectiveId, Number(state.settings.researchBatchSize || 3));
+  await refreshPersistentKnowledge();
+  var saved = Array.isArray(result?.results) ? result.results.filter(function (item) { return item.saved; }).length : 0;
+  toast('Investigación terminada: ' + saved + ' entrada(s) guardada(s) persistentemente.', saved ? 'success' : '');
+  setTimeout(function () { els.researchProgress.hidden = true; }, 1800);
+}
+
 function enabledLibrariesForChat(chat = currentChat()) {
   const enabled = state.libraries.filter(lib => lib.enabled !== false);
   if (!chat || !Array.isArray(chat.libraryIds) || chat.libraryIds.length === 0) return enabled.map(lib => lib.id);
@@ -390,7 +526,8 @@ function renderLibraries() {
   const totalChunks = libs.reduce((sum,lib) => sum + Number(lib.chunkCount || 0),0);
   els.knowledgeCount.textContent = libs.length + ' ' + (libs.length === 1 ? 'librería' : 'librerías') + ' • ' + totalDocs + ' docs • ' + totalChunks + ' fragmentos';
   els.includeKnowledge.checked = state.settings.includeKnowledge !== false;
-  els.knowledgeTopStatus.textContent = libs.length ? (libs.length + ' librerías • ' + totalChunks + ' chunks') : 'Knowledge local';
+  var dbEntries = Number(state.knowledgeDbStats?.active_entries || 0);
+  els.knowledgeTopStatus.textContent = dbEntries || libs.length ? (dbEntries + ' hechos • ' + libs.length + ' librerías') : 'Knowledge local';
   if (!libs.length) {
     els.libraryList.innerHTML = '<div class="empty-list">Crea tu primera Knowledge Library y agrega un libro, manual o carpeta.</div>';
     return;
@@ -443,21 +580,30 @@ async function runKnowledgeSearch() {
   const query = els.knowledgeSearchInput.value.trim();
   if (!query) return;
   const libraryIds = enabledLibrariesForChat();
-  const results = await window.nexa.knowledge.search(query, { libraryIds, limit:8 });
-  if (!results.length) {
-    els.knowledgeSearchResults.innerHTML = '<div class="empty-list">No encontré coincidencias en las librerías activas.</div>';
+  const objectiveIds = selectedObjectiveIdsForChat();
+  const pair = await Promise.all([
+    window.nexa.knowledgeDb.search(query, { objectiveIds:objectiveIds, limit:8, minConfidence:0 }),
+    window.nexa.knowledge.search(query, { libraryIds:libraryIds, limit:8 }),
+  ]);
+  const persistent = Array.isArray(pair[0]) ? pair[0] : [];
+  const documents = Array.isArray(pair[1]) ? pair[1] : [];
+  if (!persistent.length && !documents.length) {
+    els.knowledgeSearchResults.innerHTML = '<div class="empty-list">No encontré coincidencias en la base persistente ni en las librerías activas.</div>';
     return;
   }
-  els.knowledgeSearchResults.innerHTML = results.map(function (result) {
-    const pageText = result.page ? (' • pág. ' + result.page) : '';
-    const rawText = String(result.text || '');
-    const preview = escapeHtml(rawText.slice(0,260)) + (rawText.length > 260 ? '…' : '');
-    return '<div class="knowledge-hit">' +
-      '<strong>' + escapeHtml(result.documentName) + pageText + '</strong>' +
-      '<small>' + escapeHtml(result.libraryName) + ' • score ' + result.score + '</small>' +
-      '<p>' + preview + '</p>' +
-      '</div>';
+  var persistentHtml = persistent.map(function (result) {
+    var preview = escapeHtml(String(result.summary || '').slice(0,280)) + (String(result.summary || '').length > 280 ? '…' : '');
+    var source = result.source_title || result.source_name || result.source_url || 'Base persistente';
+    return '<div class="knowledge-hit persistent-hit"><strong>' + escapeHtml(result.topic) + '<span class="knowledge-status">' + escapeHtml(result.verification_status) + ' ' + Number(result.confidence || 0).toFixed(2) + '</span></strong>' +
+      '<small>' + escapeHtml(result.objective_name || 'Knowledge DB') + ' • ' + escapeHtml(source) + '</small><p>' + preview + '</p></div>';
   }).join('');
+  var documentHtml = documents.map(function (result) {
+    var pageText = result.page ? (' • pág. ' + result.page) : '';
+    var rawText = String(result.text || '');
+    var preview = escapeHtml(rawText.slice(0,260)) + (rawText.length > 260 ? '…' : '');
+    return '<div class="knowledge-hit"><strong>' + escapeHtml(result.documentName) + pageText + '</strong><small>' + escapeHtml(result.libraryName) + ' • score ' + result.score + '</small><p>' + preview + '</p></div>';
+  }).join('');
+  els.knowledgeSearchResults.innerHTML = persistentHtml + documentHtml;
 }
 
 function showPanel(name) {
@@ -466,7 +612,7 @@ function showPanel(name) {
   const meta = {
     system:['Sistema','Estado local en tiempo real'],
     memory:['Memoria','Recuerdos persistentes independientes del modelo'],
-    knowledge:['Knowledge Libraries','Libros y documentación local reutilizable'],
+    knowledge:['Knowledge','Base persistente, documentos e investigación web'],
     settings:['Ajustes','Modelo, rendimiento y rutas locales'],
   }[name] || ['Nexa AI',''];
   els.inspectorTitle.textContent = meta[0]; els.inspectorSubtitle.textContent = meta[1];
@@ -484,6 +630,10 @@ function fillSettings() {
   els.settingKnowledgeChunks.value = state.settings.knowledgeMaxChunks || 6;
   els.settingKnowledgeChars.value = state.settings.knowledgeMaxChars || 7500;
   els.includeKnowledge.checked = state.settings.includeKnowledge !== false;
+  els.settingInternetResearch.checked = state.settings.internetResearchEnabled !== false;
+  els.settingAutoResearch.checked = state.settings.autoResearchOnMissing !== false;
+  els.settingWebSources.value = state.settings.webMaxSources || 5;
+  els.settingResearchBatch.value = state.settings.researchBatchSize || 3;
 }
 
 async function saveSettings(event) {
@@ -498,6 +648,10 @@ async function saveSettings(event) {
     autoUnityMode: els.settingAutoUnity.checked,
     knowledgeMaxChunks: Number(els.settingKnowledgeChunks.value) || 6,
     knowledgeMaxChars: Number(els.settingKnowledgeChars.value) || 7500,
+    internetResearchEnabled: els.settingInternetResearch.checked,
+    autoResearchOnMissing: els.settingAutoResearch.checked,
+    webMaxSources: Number(els.settingWebSources.value) || 5,
+    researchBatchSize: Number(els.settingResearchBatch.value) || 3,
   };
   state.settings = { ...state.settings, ...(await window.nexa.store.saveSettings(patch)) };
   updateModeUi(); fillSettings(); toast('Ajustes guardados.','success'); refreshStats();
@@ -589,17 +743,18 @@ function cacheElements() {
     'inspectorTitle','inspectorSubtitle','refreshBtn','ollamaBadge','startEngineBtn','warmModelBtn','unloadModelBtn','ramLabel','ramBar','aiRam','unityRam',
     'vramLabel','vramBar','aiVram','otherVram','gpuUsage','gpuTemp','profileBadge','profileDescription','unityBadge','unityAdvice',
     'memoryForm','memoryInput','memoryCount','includeMemories','memoryList',
+    'knowledgeDbBadge','knowledgeDbStats','knowledgeDbPath','objectiveForm','objectiveType','objectiveName','objectiveAutomotiveFields','objectiveMake','objectiveModel','objectiveYear','objectiveEngine','objectiveDisplacement','objectiveTransmission','objectiveMarket','objectiveTrim','objectiveDescription','researchProgress','researchProgressText','researchProgressState','objectiveList',
     'libraryForm','libraryName','libraryCategory','knowledgeProgress','knowledgeProgressText','knowledgeProgressPct','knowledgeProgressBar','knowledgeCount','includeKnowledge','libraryList',
     'knowledgeSearchInput','knowledgeSearchBtn','knowledgeSearchResults','openKnowledgeBtn',
     'settingsForm','settingModel','settingBaseUrl','settingOllamaExe','settingModelsPath','settingContext','settingLightLayers','settingKeepAlive','settingAutoUnity',
-    'settingKnowledgeChunks','settingKnowledgeChars','openDataBtn','versionLabel','toastHost',
+    'settingKnowledgeChunks','settingKnowledgeChars','settingInternetResearch','settingAutoResearch','settingWebSources','settingResearchBatch','openDataBtn','versionLabel','toastHost',
   ];
   for (const id of ids) els[id] = document.getElementById(id);
 }
 
 function bindEvents() {
   els.newChatBtn.addEventListener('click', () => {
-    const chat = { id:uid('chat'), title:'Nuevo chat', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), libraryIds:[], messages:[] };
+    const chat = { id:uid('chat'), title:'Nuevo chat', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), libraryIds:[], objectiveIds:[], messages:[] };
     state.chats.unshift(chat); state.currentChatId = chat.id; renderChats(); renderCurrentChat(); renderLibraries(); els.promptInput.focus();
   });
   els.chatSearch.addEventListener('input', renderChats);
@@ -655,10 +810,49 @@ function bindEvents() {
     state.memories = state.memories.filter(memory => memory.id !== button.dataset.deleteMemory); renderMemories();
   });
   els.messages.addEventListener('click', async event => {
-    const memoryButton = event.target.closest('[data-memory-message]'); const copyButton = event.target.closest('[data-copy-message]');
+    const memoryButton = event.target.closest('[data-memory-message]');
+    const knowledgeButton = event.target.closest('[data-knowledge-message]');
+    const copyButton = event.target.closest('[data-copy-message]');
     const chat = currentChat(); if (!chat) return;
     if (memoryButton) { const message = chat.messages.find(item => item.id === memoryButton.dataset.memoryMessage); if (message) await saveMemory(message.content); }
+    if (knowledgeButton) { const message = chat.messages.find(item => item.id === knowledgeButton.dataset.knowledgeMessage); if (message) await saveMessageToKnowledge(message); }
     if (copyButton) { const message = chat.messages.find(item => item.id === copyButton.dataset.copyMessage); if (message) { await navigator.clipboard.writeText(message.content); toast('Copiado.'); } }
+  });
+
+  els.objectiveType.addEventListener('change', () => { els.objectiveAutomotiveFields.hidden = els.objectiveType.value !== 'automotive'; });
+  els.objectiveForm.addEventListener('submit', createObjectiveFromForm);
+  els.objectiveList.addEventListener('change', async event => {
+    const toggle = event.target.closest('[data-objective-chat]');
+    if (!toggle) return;
+    const chat = ensureChat();
+    let ids = Array.isArray(chat.objectiveIds) ? chat.objectiveIds.slice() : [];
+    if (toggle.checked) { if (!ids.includes(toggle.dataset.objectiveChat)) ids.push(toggle.dataset.objectiveChat); }
+    else ids = ids.filter(function (id) { return id !== toggle.dataset.objectiveChat; });
+    chat.objectiveIds = ids;
+    await persistChat(chat); renderPersistentKnowledge();
+  });
+  els.objectiveList.addEventListener('click', async event => {
+    const research = event.target.closest('[data-research-topic]');
+    if (research) {
+      const input = els.objectiveList.querySelector('[data-topic-input="' + CSS.escape(research.dataset.researchTopic) + '"]');
+      return runObjectiveResearch(research.dataset.researchTopic, input ? input.value : '');
+    }
+    const missing = event.target.closest('[data-research-missing]');
+    if (missing) return runMissingResearch(missing.dataset.researchMissing);
+    const toggle = event.target.closest('[data-toggle-objective]');
+    if (toggle) {
+      const obj = state.objectives.find(function (item) { return item.id === toggle.dataset.toggleObjective; });
+      if (!obj) return;
+      await window.nexa.knowledgeDb.updateObjective(obj.id, { enabled:obj.enabled === false });
+      await refreshPersistentKnowledge(); return;
+    }
+    const del = event.target.closest('[data-delete-objective]');
+    if (del) {
+      if (!confirm('¿Eliminar este objetivo y todo su conocimiento estructurado? Las fuentes/versiones asociadas dejarán de pertenecer al objetivo.')) return;
+      await window.nexa.knowledgeDb.deleteObjective(del.dataset.deleteObjective);
+      const chat = currentChat(); if (chat) { chat.objectiveIds = (chat.objectiveIds || []).filter(function (id) { return id !== del.dataset.deleteObjective; }); await persistChat(chat); }
+      await refreshPersistentKnowledge();
+    }
   });
 
   els.libraryForm.addEventListener('submit', async event => {
@@ -714,6 +908,14 @@ function bindEvents() {
   window.nexa.chat.onContext(packet => { if (packet.requestId === state.activeRequestId) attachSources(packet.sources || []); });
   window.nexa.chat.onDone(packet => { if (packet.requestId === state.activeRequestId) finishGeneration(packet.stats).catch(error => finishWithError(error.message)); });
   window.nexa.chat.onError(packet => { if (packet.requestId === state.activeRequestId) finishWithError(packet.error || 'Error de generación.'); });
+  window.nexa.research.onProgress(packet => {
+    els.researchProgress.hidden = false;
+    if (packet.phase === 'search') { els.researchProgressText.textContent = 'Buscando fuentes: ' + (packet.topic || ''); els.researchProgressState.textContent = 'SEARCH'; }
+    else if (packet.phase === 'validate') { els.researchProgressText.textContent = 'Validando ' + String(packet.sourceCount || 0) + ' fuente(s)…'; els.researchProgressState.textContent = 'VERIFY'; }
+    else if (packet.phase === 'batch') { els.researchProgressText.textContent = 'Faltante ' + String(packet.current || 0) + '/' + String(packet.total || 0) + ': ' + (packet.topic || ''); els.researchProgressState.textContent = 'BATCH'; }
+    else if (packet.phase === 'done') { els.researchProgressText.textContent = packet.saved ? 'Validado y guardado persistentemente' : 'Investigado; no se guardó como confirmado'; els.researchProgressState.textContent = packet.status || 'DONE'; }
+    else if (packet.phase === 'error') { els.researchProgressText.textContent = packet.error || 'Error de investigación'; els.researchProgressState.textContent = 'ERROR'; }
+  });
   window.nexa.knowledge.onProgress(packet => {
     els.knowledgeProgress.hidden = false;
     if (packet.phase === 'done') {
@@ -727,12 +929,15 @@ function bindEvents() {
 
 async function init() {
   cacheElements(); bindEvents();
-  const [snapshot, knowledge] = await Promise.all([window.nexa.store.get(), window.nexa.knowledge.list()]);
+  const initData = await Promise.all([window.nexa.store.get(), window.nexa.knowledge.list(), window.nexa.knowledgeDb.objectives(), window.nexa.knowledgeDb.stats()]);
+  const snapshot = initData[0]; const knowledge = initData[1];
   state.settings = snapshot.settings || {}; state.chats = snapshot.chats || []; state.memories = snapshot.memories || [];
   state.libraries = knowledge?.libraries || []; state.knowledgeRoot = knowledge?.root || snapshot.knowledgeDirectory || '';
+  state.objectives = Array.isArray(initData[2]) ? initData[2] : []; state.knowledgeDbStats = initData[3] || null;
   state.currentChatId = state.chats[0]?.id || null;
-  els.versionLabel.textContent = `v${snapshot.appVersion || '1.2.4'}`;
-  fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
+  els.versionLabel.textContent = `v${snapshot.appVersion || '1.3.0'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.3.0'}`;
+  fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderPersistentKnowledge(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
+  els.objectiveAutomotiveFields.hidden = els.objectiveType.value !== 'automotive';
   await refreshStats(); state.statsTimer = setInterval(refreshStats,2500);
 }
 

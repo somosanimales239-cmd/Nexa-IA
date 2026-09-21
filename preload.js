@@ -60,4 +60,20 @@ contextBridge.exposeInMainWorld('nexa', {
     openLibrary: libraryId => ipcRenderer.invoke('knowledge:open-library', libraryId),
     onProgress: callback => on('knowledge:progress', callback),
   }),
+  knowledgeDb: Object.freeze({
+    stats: () => ipcRenderer.invoke('knowledge-db:stats'),
+    objectives: () => ipcRenderer.invoke('knowledge-db:objectives'),
+    createObjective: input => ipcRenderer.invoke('knowledge-db:create-objective', input),
+    updateObjective: (objectiveId, patch) => ipcRenderer.invoke('knowledge-db:update-objective', objectiveId, patch),
+    deleteObjective: objectiveId => ipcRenderer.invoke('knowledge-db:delete-objective', objectiveId),
+    topics: objectiveId => ipcRenderer.invoke('knowledge-db:topics', objectiveId),
+    addTopic: (objectiveId, input) => ipcRenderer.invoke('knowledge-db:add-topic', objectiveId, input),
+    search: (query, options) => ipcRenderer.invoke('knowledge-db:search', query, options),
+    save: input => ipcRenderer.invoke('knowledge-db:save', input),
+  }),
+  research: Object.freeze({
+    topic: (objectiveId, topic, options) => ipcRenderer.invoke('research:topic', objectiveId, topic, options),
+    missing: (objectiveId, limit) => ipcRenderer.invoke('research:missing', objectiveId, limit),
+    onProgress: callback => on('research:progress', callback),
+  }),
 });

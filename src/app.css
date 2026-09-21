@@ -290,3 +290,45 @@ button { color: inherit; }
 .memory-actions { display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
 
 @media (max-width:1100px) { .jump-to-bottom { right:30px; bottom:16px; } .chat-scroll-rail { right:5px; } }
+
+/* Nexa AI 1.3 persistent knowledge + web research */
+.knowledge-db-card {
+  border:1px solid rgba(168,255,62,.17);
+  background:linear-gradient(180deg,rgba(12,23,35,.96),rgba(8,15,26,.96));
+  border-radius:12px;
+  padding:12px;
+  margin-bottom:14px;
+}
+.knowledge-db-card > strong { display:block; margin-top:9px; color:#dce8f7; font-size:12px; }
+.knowledge-db-card > small { display:block; margin-top:4px; color:#5f7088; font-size:8.5px; word-break:break-all; line-height:1.35; }
+.objective-form { display:grid; gap:8px; margin-bottom:12px; }
+.objective-form input, .objective-form textarea, .objective-form select {
+  width:100%; border:1px solid var(--line); background:#0b1322; color:var(--text); border-radius:9px; outline:none; padding:9px 10px; font-size:10.5px;
+}
+.objective-form textarea { resize:vertical; min-height:58px; }
+.objective-form input:focus, .objective-form textarea:focus, .objective-form select:focus { border-color:rgba(168,255,62,.4); box-shadow:0 0 0 3px rgba(168,255,62,.06); }
+.objective-auto-fields { display:grid; gap:7px; }
+.objective-list { display:grid; gap:10px; margin-bottom:15px; }
+.objective-card { border:1px solid var(--line); border-radius:12px; background:linear-gradient(180deg,#0d1627,#0a1220); padding:11px; }
+.objective-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+.objective-head strong { display:block; color:#dbe5f4; font-size:11.5px; }
+.objective-head small { display:block; color:#5f7088; margin-top:3px; font-size:8.5px; line-height:1.4; }
+.objective-status-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:9px; }
+.objective-stat { background:#09111f; border-radius:8px; padding:6px 5px; text-align:center; }
+.objective-stat strong { display:block; font-size:10px; color:#c5d3e5; }
+.objective-stat small { display:block; margin-top:2px; color:#596a82; font-size:7.5px; }
+.objective-actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; }
+.objective-actions .tiny { border:1px solid var(--line); background:#101a2b; color:#91a2b9; border-radius:7px; padding:5px 7px; }
+.objective-actions .research-button { color:var(--lime); border-color:rgba(168,255,62,.18); background:rgba(168,255,62,.045); }
+.objective-actions .danger { color:#ff98a1; background:#22131a; }
+.objective-chat-toggle { display:flex; align-items:center; gap:7px; margin-top:8px; padding:7px 8px; border-radius:8px; background:#09111f; color:#8c9ab0; font-size:9px; }
+.objective-chat-toggle input { accent-color:var(--lime); }
+.objective-topic-row { display:flex; gap:6px; margin-top:8px; }
+.objective-topic-row input { min-width:0; flex:1; border:1px solid var(--line); background:#08111f; color:var(--text); border-radius:8px; padding:7px 8px; font-size:9px; }
+.research-progress { border:1px solid rgba(89,167,255,.22); background:linear-gradient(180deg,#0a1425,#08111d); border-radius:10px; padding:9px 10px; margin:10px 0; }
+.research-flow { margin-top:7px; color:#6f86a3; font-size:8px; letter-spacing:.35px; }
+.knowledge-section-separator { margin-top:15px; padding-top:14px; border-top:1px solid var(--line); }
+.web-settings-note { margin:2px 0 4px; }
+.persistent-hit { border-color:rgba(168,255,62,.16); }
+.persistent-hit .knowledge-status { display:inline-block; margin-left:5px; padding:2px 5px; border-radius:999px; font-size:7px; font-weight:800; background:rgba(168,255,62,.08); color:var(--lime); }
+.source-chip.web-source { border-color:rgba(168,255,62,.16); background:rgba(168,255,62,.05); color:#baff73; }

@@ -14,7 +14,7 @@ const html = read('src/index.html');
 
 test('Nexa AI package and Electron entry graph are valid', () => {
   assert.equal(packageJson.build.productName, 'Nexa AI');
-  assert.equal(packageJson.version, '1.2.6');
+  assert.equal(packageJson.version, '1.3.0');
   assert.ok(fs.existsSync(path.join(root, packageJson.main)));
   for (const file of ['preload.js','src/index.html','src/app.js','src/app.css']) assert.ok(fs.existsSync(path.join(root, file)), file);
 });
@@ -128,4 +128,36 @@ test('renderer avoids regex literals that break the App Builder parser', () => {
   assert.doesNotMatch(appJs, /\.split\(\//);
   assert.doesNotMatch(appJs, /\.match\(\//);
   assert.doesNotMatch(appJs, /\.test\(\//);
+});
+
+
+test('persistent SQLite knowledge database and structured objectives are implemented', () => {
+  const dbModule = read('lib/persistent-knowledge.js');
+  assert.match(dbModule, /nexa-knowledge\.db/);
+  assert.match(dbModule, /knowledge_objectives/);
+  assert.match(dbModule, /objective_topics/);
+  assert.match(dbModule, /knowledge_entries/);
+  assert.match(dbModule, /knowledge_sources/);
+  assert.match(dbModule, /knowledge_entry_sources/);
+  assert.match(dbModule, /research_runs/);
+  assert.match(dbModule, /VERIFIED/);
+  assert.match(dbModule, /MISSING/);
+  assert.match(dbModule, /CONFLICTING/);
+  assert.match(preload, /knowledgeDb:/);
+  assert.match(html, /knowledgeDbStats/);
+  assert.match(appJs, /Guardar en conocimiento/);
+});
+
+test('web research is opt-in controllable, source ranked, validated and persisted', () => {
+  const webResearch = read('lib/web-research.js');
+  assert.match(webResearch, /duckDuckGoSearch/);
+  assert.match(webResearch, /sourceType/);
+  assert.match(webResearch, /nhtsa\.gov/);
+  assert.match(main, /internetResearchEnabled/);
+  assert.match(main, /autoResearchOnMissing/);
+  assert.match(main, /researchTopic/);
+  assert.match(main, /ollamaResearchJson/);
+  assert.match(main, /knowledgeDb\.saveKnowledge/);
+  assert.match(appJs, /Completar faltantes/);
+  assert.match(html, /Permitir investigación por Internet/);
 });
