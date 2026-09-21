@@ -13,6 +13,7 @@ const state = {
   lastUnityDetected: false,
   autoModeBusy: false,
   userPinnedToBottom: true,
+  scrollDrag: null,
 };
 
 const $ = selector => document.querySelector(selector);
@@ -133,40 +134,79 @@ function renderChats() {
 
 
 function isNearBottom() {
-  if (!els.messages || els.messages.hidden) return true;
+  if (!els.messages || !els.chatScrollShell || els.chatScrollShell.hidden) return true;
   const threshold = 120;
   const remaining = els.messages.scrollHeight - els.messages.scrollTop - els.messages.clientHeight;
   return remaining <= threshold;
 }
 
 function updateScrollUi() {
-  if (!els.messages || els.messages.hidden) {
-    if (els.jumpToBottomBtn) {
-      els.jumpToBottomBtn.hidden = true;
-      els.jumpToBottomBtn.classList.remove('at-bottom');
-    }
+  if (!els.messages || !els.chatScrollShell || els.chatScrollShell.hidden) {
     state.userPinnedToBottom = true;
+    if (els.jumpToBottomBtn) els.jumpToBottomBtn.hidden = true;
     return;
   }
+  const maxScroll = Math.max(0, els.messages.scrollHeight - els.messages.clientHeight);
+  const railHeight = Math.max(1, els.chatScrollRail.clientHeight - 4);
+  const viewportRatio = els.messages.scrollHeight > 0 ? Math.min(1, els.messages.clientHeight / els.messages.scrollHeight) : 1;
+  const thumbHeight = maxScroll > 0 ? Math.max(46, Math.round(railHeight * viewportRatio)) : railHeight;
+  const thumbTravel = Math.max(0, railHeight - thumbHeight);
+  const progress = maxScroll > 0 ? Math.min(1, Math.max(0, els.messages.scrollTop / maxScroll)) : 0;
+  const thumbTop = Math.round(2 + (thumbTravel * progress));
+  els.chatScrollThumb.style.height = String(thumbHeight) + 'px';
+  els.chatScrollThumb.style.transform = 'translateY(' + String(thumbTop - 2) + 'px)';
+  els.chatScrollRail.classList.toggle('no-overflow', maxScroll <= 0);
   const nearBottom = isNearBottom();
   state.userPinnedToBottom = nearBottom;
-  if (els.jumpToBottomBtn) {
-    els.jumpToBottomBtn.hidden = false;
-    els.jumpToBottomBtn.classList.toggle('at-bottom', nearBottom);
-    els.jumpToBottomBtn.title = nearBottom ? 'Ya estás al final de la conversación' : 'Ir al final de la conversación';
-  }
+  els.jumpToBottomBtn.hidden = false;
+  els.jumpToBottomBtn.classList.toggle('at-bottom', nearBottom);
+  els.jumpToBottomBtn.title = nearBottom ? 'Ya estás al final de la conversación' : 'Ir al final de la conversación';
 }
 
 function scrollMessagesToBottom(force = false) {
-  if (!els.messages || els.messages.hidden) return;
-  if (!force && !state.userPinnedToBottom) {
-    updateScrollUi();
-    return;
-  }
-  requestAnimationFrame(() => {
-    els.messages.scrollTop = els.messages.scrollHeight;
-    updateScrollUi();
-  });
+  if (!els.messages || !els.chatScrollShell || els.chatScrollShell.hidden) return;
+  if (!force && !state.userPinnedToBottom) { updateScrollUi(); return; }
+  requestAnimationFrame(() => { els.messages.scrollTop = els.messages.scrollHeight; updateScrollUi(); });
+}
+
+function setScrollFromRailPointer(clientY) {
+  if (!els.chatScrollRail || !els.messages) return;
+  const rect = els.chatScrollRail.getBoundingClientRect();
+  const railHeight = Math.max(1, rect.height - 4);
+  const thumbHeight = Math.max(1, els.chatScrollThumb.getBoundingClientRect().height);
+  const thumbTravel = Math.max(1, railHeight - thumbHeight);
+  const maxScroll = Math.max(0, els.messages.scrollHeight - els.messages.clientHeight);
+  if (maxScroll <= 0) return;
+  const relative = Math.min(thumbTravel, Math.max(0, clientY - rect.top - 2 - (thumbHeight / 2)));
+  els.messages.scrollTop = (relative / thumbTravel) * maxScroll;
+  updateScrollUi();
+}
+
+function beginScrollThumbDrag(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const maxScroll = Math.max(0, els.messages.scrollHeight - els.messages.clientHeight);
+  if (maxScroll <= 0) return;
+  state.scrollDrag = { startY:event.clientY, startScrollTop:els.messages.scrollTop };
+  els.chatScrollThumb.classList.add('dragging');
+  if (els.chatScrollThumb.setPointerCapture) { try { els.chatScrollThumb.setPointerCapture(event.pointerId); } catch (_) {} }
+}
+
+function moveScrollThumbDrag(event) {
+  if (!state.scrollDrag || !els.chatScrollRail || !els.messages) return;
+  const railHeight = Math.max(1, els.chatScrollRail.clientHeight - 4);
+  const thumbHeight = Math.max(1, els.chatScrollThumb.getBoundingClientRect().height);
+  const thumbTravel = Math.max(1, railHeight - thumbHeight);
+  const maxScroll = Math.max(0, els.messages.scrollHeight - els.messages.clientHeight);
+  if (maxScroll <= 0) return;
+  const deltaY = event.clientY - state.scrollDrag.startY;
+  els.messages.scrollTop = state.scrollDrag.startScrollTop + ((deltaY / thumbTravel) * maxScroll);
+  updateScrollUi();
+}
+
+function endScrollThumbDrag() {
+  state.scrollDrag = null;
+  if (els.chatScrollThumb) els.chatScrollThumb.classList.remove('dragging');
 }
 
 function sourceChips(message) {
@@ -184,12 +224,13 @@ function renderCurrentChat() {
   els.chatTitle.value = chat?.title || 'Nuevo chat';
   if (!chat || !chat.messages.length) {
     els.welcomeState.hidden = false;
-    els.messages.hidden = true;
+    els.chatScrollShell.hidden = true;
     els.messages.innerHTML = '';
+    if (els.jumpToBottomBtn) els.jumpToBottomBtn.hidden = true;
     return;
   }
   els.welcomeState.hidden = true;
-  els.messages.hidden = false;
+  els.chatScrollShell.hidden = false;
   els.messages.innerHTML = chat.messages.map(message => `
     <article class="message ${escapeHtml(message.role)}" data-message-id="${escapeHtml(message.id)}">
       <div class="avatar">${message.role === 'assistant' ? 'N' : 'TÚ'}</div>
@@ -543,8 +584,8 @@ function resizePrompt() {
 
 function cacheElements() {
   const ids = [
-    'newChatBtn','chatSearch','chatList','chatTitle','engineDot','engineText','modelText','knowledgeTopStatus','fastModeBtn','lightModeBtn',
-    'welcomeState','welcomeStartEngine','welcomeWarmModel','messages','jumpToBottomBtn','generationBanner','stopBtn','promptInput','sendBtn','composerHint',
+    'newChatBtn','chatSearch','chatList','chatTitle','brandVersion','engineDot','engineText','modelText','knowledgeTopStatus','fastModeBtn','lightModeBtn',
+    'welcomeState','welcomeStartEngine','welcomeWarmModel','chatScrollShell','messages','chatScrollRail','chatScrollThumb','jumpToBottomBtn','generationBanner','stopBtn','promptInput','sendBtn','composerHint',
     'inspectorTitle','inspectorSubtitle','refreshBtn','ollamaBadge','startEngineBtn','warmModelBtn','unloadModelBtn','ramLabel','ramBar','aiRam','unityRam',
     'vramLabel','vramBar','aiVram','otherVram','gpuUsage','gpuTemp','profileBadge','profileDescription','unityBadge','unityAdvice',
     'memoryForm','memoryInput','memoryCount','includeMemories','memoryList',
@@ -584,6 +625,12 @@ function bindEvents() {
   els.promptInput.addEventListener('input', resizePrompt);
   els.messages.addEventListener('scroll', updateScrollUi);
   els.jumpToBottomBtn.addEventListener('click', () => scrollMessagesToBottom(true));
+  els.chatScrollRail.addEventListener('pointerdown', event => { if (event.target === els.chatScrollThumb) return; setScrollFromRailPointer(event.clientY); });
+  els.chatScrollThumb.addEventListener('pointerdown', beginScrollThumbDrag);
+  window.addEventListener('pointermove', moveScrollThumbDrag);
+  window.addEventListener('pointerup', endScrollThumbDrag);
+  window.addEventListener('pointercancel', endScrollThumbDrag);
+  window.addEventListener('resize', updateScrollUi);
   els.promptInput.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } });
   document.addEventListener('keydown', event => { if (event.ctrlKey && event.key.toLowerCase() === 'n') { event.preventDefault(); els.newChatBtn.click(); } });
   document.querySelectorAll('.nav-button').forEach(button => button.addEventListener('click', () => showPanel(button.dataset.panel)));

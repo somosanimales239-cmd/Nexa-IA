@@ -14,7 +14,7 @@
         <div class="brand-mark brand-logo-shell"><img class="brand-logo" src="../assets/logo-128.png" alt="Nexa AI" /></div>
         <div>
           <div class="brand-name">Nexa AI</div>
-          <div class="brand-sub">Local Intelligence</div>
+          <div class="brand-sub">Local Intelligence <span id="brandVersion" class="brand-version">v1.2.6</span></div>
         </div>
       </div>
 
@@ -66,9 +66,15 @@
         <div class="privacy-note">Offline real • Datos externos al modelo • Knowledge reutilizable por futuros modelos</div>
       </section>
 
-      <section id="messages" class="messages" data-testid="messages" hidden></section>
+      <div id="chatScrollShell" class="chat-scroll-shell" data-testid="chat-scroll-shell" hidden>
+        <section id="messages" class="messages" data-testid="messages"></section>
 
-      <button id="jumpToBottomBtn" class="jump-to-bottom" data-testid="jump-to-bottom" title="Ir al final" hidden>↓ Ir al final</button>
+        <div id="chatScrollRail" class="chat-scroll-rail" data-testid="chat-scroll-rail" aria-label="Barra de desplazamiento de la conversación">
+          <div id="chatScrollThumb" class="chat-scroll-thumb" data-testid="chat-scroll-thumb"></div>
+        </div>
+
+        <button id="jumpToBottomBtn" class="jump-to-bottom" data-testid="jump-to-bottom" title="Ir al final">↓ Ir al final</button>
+      </div>
 
       <div class="composer-wrap">
         <div id="generationBanner" class="generation-banner" hidden>

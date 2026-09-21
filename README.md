@@ -1,4 +1,4 @@
-# Nexa AI v1.2.5
+# Nexa AI v1.2.6
 
 Nexa AI is a Windows desktop control center for a **local Ollama** installation. Version 1.1 keeps chats, user memory and imported knowledge **outside the model weights**, so the same data can be reused later by another local model such as a future 120B model.
 

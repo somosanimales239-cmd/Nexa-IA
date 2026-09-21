@@ -1,6 +1,6 @@
 # NEXA-02 — Model-Independent Knowledge Layer
 
-Update **Nexa AI from 1.0.0 to 1.2.5** as one complete update. Preserve every working 1.0 feature and add a durable Knowledge Library system that lives outside model weights.
+Update **Nexa AI from 1.0.0 to 1.2.6** as one complete update. Preserve every working 1.0 feature and add a durable Knowledge Library system that lives outside model weights.
 
 ## Core rule
 

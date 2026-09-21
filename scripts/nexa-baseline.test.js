@@ -14,7 +14,7 @@ const html = read('src/index.html');
 
 test('Nexa AI package and Electron entry graph are valid', () => {
   assert.equal(packageJson.build.productName, 'Nexa AI');
-  assert.equal(packageJson.version, '1.2.5');
+  assert.equal(packageJson.version, '1.2.6');
   assert.ok(fs.existsSync(path.join(root, packageJson.main)));
   for (const file of ['preload.js','src/index.html','src/app.js','src/app.css']) assert.ok(fs.existsSync(path.join(root, file)), file);
 });
@@ -105,12 +105,18 @@ test('chat scrolling and branded desktop icon are implemented', () => {
   const css = read('src/app.css');
   const appJs = read('src/app.js');
   const mainJs = read('main.js');
+  assert.match(html, /chatScrollShell/);
+  assert.match(html, /chatScrollRail/);
+  assert.match(html, /chatScrollThumb/);
   assert.match(html, /jumpToBottomBtn/);
-  assert.match(css, /\.messages::\-webkit\-scrollbar/);
-  assert.match(css, /\.messages\s*\{[^}]*min-height\s*:\s*0[^}]*overflow-y\s*:\s*scroll/s);
+  assert.match(css, /\.chat-scroll-shell/);
+  assert.match(css, /\.chat-scroll-rail/);
+  assert.match(css, /\.chat-scroll-thumb/);
   assert.match(css, /\.workspace\s*\{[^}]*min-height\s*:\s*0[^}]*overflow\s*:\s*hidden/s);
   assert.match(css, /\.jump-to-bottom/);
   assert.match(appJs, /scrollMessagesToBottom/);
+  assert.match(appJs, /setScrollFromRailPointer/);
+  assert.match(appJs, /beginScrollThumbDrag/);
   assert.match(appJs, /jumpToBottomBtn\.hidden\s*=\s*false/);
   assert.match(mainJs, /assets.*icon\.ico/s);
   assert.equal(packageJson.build.win.icon, 'assets/icon.ico');
