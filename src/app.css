@@ -54,7 +54,7 @@ button { color: inherit; }
 .sidebar-bottom { border-top:1px solid var(--line); padding-top:10px; display:grid; gap:4px; }
 .nav-button { text-align:left; background:transparent; color:#8190a7; border-radius:8px; padding:9px 10px; font-size:12px; }
 .nav-button:hover, .nav-button.active { color:#e8eef9; background:#0e1728; }
-.workspace { min-width:0; display:flex; flex-direction:column; position:relative; }
+.workspace { min-width:0; min-height:0; height:100vh; overflow:hidden; display:flex; flex-direction:column; position:relative; }
 .topbar { min-height:79px; border-bottom:1px solid var(--line); padding:13px 20px; display:flex; align-items:center; justify-content:space-between; gap:20px; background:rgba(7,11,20,.82); backdrop-filter:blur(12px); }
 .chat-title-wrap { min-width:0; }
 .chat-title { display:block; border:0; background:transparent; color:var(--text); font-size:17px; font-weight:760; outline:none; max-width:520px; width:min(42vw,520px); padding:2px 0; }
@@ -81,12 +81,11 @@ button { color: inherit; }
 .welcome-logo { width:100%; height:100%; display:block; object-fit:cover; }
 .welcome-actions { display:flex; justify-content:center; gap:9px; }
 .privacy-note { margin-top:20px; color:#59677c; font-size:11px; }
-.messages { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:26px max(24px, calc((100% - 820px)/2)); }
-.messages { scrollbar-width:auto; scrollbar-color:#324764 rgba(6,11,20,.72); }
-.messages::-webkit-scrollbar { width:12px; }
-.messages::-webkit-scrollbar-track { background:rgba(6,11,20,.72); border-left:1px solid rgba(148,163,184,.06); }
-.messages::-webkit-scrollbar-thumb { background:linear-gradient(180deg,#314966,#21334c); border-radius:999px; border:3px solid rgba(6,11,20,.72); }
-.messages::-webkit-scrollbar-thumb:hover { background:linear-gradient(180deg,#46627f,#2f4868); }
+.messages { flex:1 1 0; min-height:0; overflow-x:hidden; overflow-y:scroll; scrollbar-gutter:stable; scroll-behavior:smooth; padding:26px max(24px, calc((100% - 820px)/2)); scrollbar-width:auto; scrollbar-color:#3a5372 #09111f; }
+.messages::-webkit-scrollbar { width:14px; }
+.messages::-webkit-scrollbar-track { background:#09111f; border-left:1px solid rgba(148,163,184,.10); }
+.messages::-webkit-scrollbar-thumb { background:linear-gradient(180deg,#405d7e,#2a405c); border-radius:999px; border:3px solid #09111f; min-height:44px; }
+.messages::-webkit-scrollbar-thumb:hover { background:linear-gradient(180deg,#58789c,#385778); }
 .jump-to-bottom {
   position:absolute;
   right:28px;
@@ -112,6 +111,8 @@ button { color: inherit; }
 }
 .jump-to-bottom:hover { opacity:1; transform:translateY(-2px); border-color:rgba(168,255,62,.34); background:rgba(12,22,36,.82); }
 .jump-to-bottom:active { transform:translateY(0); }
+.jump-to-bottom.at-bottom { opacity:.42; }
+.jump-to-bottom.at-bottom:hover { opacity:.82; }
 .jump-to-bottom[hidden] { display:none !important; }
 .message { margin:0 0 24px; display:grid; grid-template-columns:36px 1fr; gap:12px; }
 .avatar { width:32px; height:32px; display:grid; place-items:center; border-radius:10px; background:#111a2b; border:1px solid var(--line); font-weight:900; font-size:12px; color:#aab7ca; }
@@ -123,7 +124,7 @@ button { color: inherit; }
 .message-actions { display:flex; gap:8px; margin-top:8px; }
 .message-action { border:0; background:transparent; color:#66758d; cursor:pointer; padding:0; font-size:10px; }
 .message-action:hover { color:var(--lime); }
-.composer-wrap { padding:10px max(18px, calc((100% - 840px)/2)) 18px; background:linear-gradient(180deg, transparent, rgba(7,11,20,.96) 28%); }
+.composer-wrap { flex:0 0 auto; padding:10px max(18px, calc((100% - 840px)/2)) 18px; background:linear-gradient(180deg, transparent, rgba(7,11,20,.96) 28%); }
 .composer { border:1px solid rgba(148,163,184,.18); background:#0d1525; border-radius:14px; padding:11px 12px 9px; box-shadow:var(--shadow); }
 .composer textarea { width:100%; min-height:28px; max-height:180px; resize:none; background:transparent; border:0; color:var(--text); outline:none; line-height:1.5; padding:2px 2px 8px; }
 .composer-actions { display:flex; justify-content:space-between; align-items:center; }

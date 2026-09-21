@@ -1,7 +1,7 @@
 {
   "name": "nexa-ai-local",
-  "version": "1.2.4",
-  "description": "Nexa AI - local chat, persistent memory, model-independent Knowledge Libraries, desktop branding, reliable chat scrolling and robust Windows build dependency locking",
+  "version": "1.2.5",
+  "description": "Nexa AI - local chat, persistent memory, model-independent Knowledge Libraries, visible chat scrollbar, always-available jump-to-bottom control, desktop branding and Ollama performance control for Windows",
   "main": "main.js",
   "author": "Nexa AI",
   "license": "UNLICENSED",

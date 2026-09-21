@@ -141,13 +141,20 @@ function isNearBottom() {
 
 function updateScrollUi() {
   if (!els.messages || els.messages.hidden) {
-    if (els.jumpToBottomBtn) els.jumpToBottomBtn.hidden = true;
+    if (els.jumpToBottomBtn) {
+      els.jumpToBottomBtn.hidden = true;
+      els.jumpToBottomBtn.classList.remove('at-bottom');
+    }
     state.userPinnedToBottom = true;
     return;
   }
   const nearBottom = isNearBottom();
   state.userPinnedToBottom = nearBottom;
-  if (els.jumpToBottomBtn) els.jumpToBottomBtn.hidden = nearBottom;
+  if (els.jumpToBottomBtn) {
+    els.jumpToBottomBtn.hidden = false;
+    els.jumpToBottomBtn.classList.toggle('at-bottom', nearBottom);
+    els.jumpToBottomBtn.title = nearBottom ? 'Ya estás al final de la conversación' : 'Ir al final de la conversación';
+  }
 }
 
 function scrollMessagesToBottom(force = false) {

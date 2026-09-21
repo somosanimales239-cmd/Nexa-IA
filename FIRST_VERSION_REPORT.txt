@@ -1,4 +1,4 @@
-Nexa AI 1.2.4 update source prepared.
+Nexa AI 1.2.5 update source prepared.
 
 Baseline preserved:
 - Local Ollama / gpt-oss chat
@@ -7,7 +7,7 @@ Baseline preserved:
 - Unity-aware hardware monitoring
 - Offline operation
 
-New in 1.2.4:
+New in 1.2.5:
 - Model-independent Knowledge Libraries
 - Separate local Knowledge storage
 - PDF and DOCX ingestion

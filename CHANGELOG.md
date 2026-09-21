@@ -1,16 +1,16 @@
-## 1.2.4
+## 1.2.5
 - Fixed GitHub Actions build failure caused by a stale package-lock.json left from older versions.
 - The Windows workflow now detects version/dependency mismatches in package-lock.json and regenerates it automatically from package.json before npm ci.
 - This specifically recovers missing Knowledge dependencies such as mammoth and pdfjs-dist without requiring manual repository cleanup.
 - Preserves the Nexa AI logo, chat scrollbar, floating Ir al final button, Knowledge Libraries, memory and performance profiles.
 
-## 1.2.3
+## 1.2.5
 - Fixed App Builder parsing failure in `src/app.js` by removing JavaScript regular-expression literals from renderer code while preserving identical behavior.
 - Kept the conversation scrollbar and translucent `↓ Ir al final` button.
 - Kept the new Nexa AI logo bundled for the application window, installer, Start Menu and desktop shortcut.
 - Added an explicit validation guard so future packages fail if regex literals are accidentally reintroduced into `src/app.js`.
 
-## 1.2.3
+## 1.2.5
 - Fixed the conversation viewport with a dedicated visible chat scrollbar.
 - Added a semi-transparent floating “Ir al final” button that appears when the user scrolls away from the newest messages.
 - Preserved manual scroll position while the assistant streams new text; automatic follow resumes only when the user is near the bottom or taps the button.

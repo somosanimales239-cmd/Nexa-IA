@@ -1,10 +1,10 @@
-# NEXA AI 1.2.4 — ONE-SHOT UPDATE PROMPT
+# NEXA AI 1.2.5 — ONE-SHOT UPDATE PROMPT
 
 Update the real Windows Electron application **Nexa AI** in repository:
 
 `somosanimales239-cmd/Nexa-IA`
 
-This is one complete update from 1.0.0 to **1.2.4**. Do not split it into a chain of partial versions. Preserve every working 1.0 capability and implement the full contract:
+This is one complete update from 1.0.0 to **1.2.5**. Do not split it into a chain of partial versions. Preserve every working 1.0 capability and implement the full contract:
 
 `NEXA-02-model-independent-knowledge-layer`
 
@@ -139,7 +139,7 @@ The same Knowledge must be usable immediately by a future 120B model.
 ## Packaging
 
 Product name: `Nexa AI`
-Version: `1.2.4`
+Version: `1.2.5`
 App ID: `com.nexa.localai`
 
 Keep required Windows outputs:
