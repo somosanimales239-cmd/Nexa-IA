@@ -1,4 +1,4 @@
-# Nexa AI v1.3.0
+# Nexa AI v1.3.1
 
 Nexa AI is a Windows Electron application for running a local Ollama model with persistent chats, user memory, document Knowledge Libraries, structured persistent knowledge and source-traced Internet research.
 

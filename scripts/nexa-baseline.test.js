@@ -14,7 +14,7 @@ const html = read('src/index.html');
 
 test('Nexa AI package and Electron entry graph are valid', () => {
   assert.equal(packageJson.build.productName, 'Nexa AI');
-  assert.equal(packageJson.version, '1.3.0');
+  assert.equal(packageJson.version, '1.3.1');
   assert.ok(fs.existsSync(path.join(root, packageJson.main)));
   for (const file of ['preload.js','src/index.html','src/app.js','src/app.css']) assert.ok(fs.existsSync(path.join(root, file)), file);
 });
@@ -151,6 +151,9 @@ test('persistent SQLite knowledge database and structured objectives are impleme
 test('web research is opt-in controllable, source ranked, validated and persisted', () => {
   const webResearch = read('lib/web-research.js');
   assert.match(webResearch, /duckDuckGoSearch/);
+  assert.match(webResearch, /duckDuckGoLiteSearch/);
+  assert.match(webResearch, /bingRssSearch/);
+  assert.match(webResearch, /bingHtmlSearch/);
   assert.match(webResearch, /sourceType/);
   assert.match(webResearch, /nhtsa\.gov/);
   assert.match(main, /internetResearchEnabled/);

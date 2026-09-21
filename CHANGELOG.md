@@ -1,3 +1,9 @@
+## 1.3.1
+- Fixed Internet research failures caused by relying on a single DuckDuckGo HTML endpoint.
+- Added multi-provider fallback search: DuckDuckGo HTML, DuckDuckGo Lite, Bing RSS, and Bing HTML.
+- Added provider diagnostics to errors so SEARCH failures identify which provider was blocked or returned no results.
+- Preserved persistent SQLite knowledge, source validation, custom chat scrollbar, transparent jump-to-bottom button and Nexa desktop logo.
+
 # Changelog
 
 ## 1.3.0
