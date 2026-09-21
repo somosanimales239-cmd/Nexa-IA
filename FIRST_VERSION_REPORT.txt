@@ -1,39 +1,29 @@
-NEXA AI 1.0.0 — FIRST VERSION SOURCE REPORT
+Nexa AI 1.2.3 update source prepared.
 
-STATUS
-- Source implementation: COMPLETE
-- Static JavaScript syntax checks: PASS
-- Nexa delivery validator: PASS
-- Nexa project validator: PASS
-- Application acceptance tests: 8/8 PASS
-- Electron UI smoke: must run in the GitHub/Nexa Windows build environment where Electron dependencies are installed
-- Windows installer/portable/ZIP: must be produced by the Nexa Windows workflow
+Baseline preserved:
+- Local Ollama / gpt-oss chat
+- Persistent chats and manual memory
+- Fast / Light GPU profiles
+- Unity-aware hardware monitoring
+- Offline operation
 
-CORE FEATURES
-- Local Ollama gpt-oss:20b streaming chat
-- Persistent chats: new/select/rename/search/delete
-- Persistent local memory: add/save-from-message/enable/delete
-- Fast mode: Ollama automatic GPU offload
-- Light mode: real num_gpu control, default 6 GPU layers
-- Profile switch unloads model so same model reloads under new profile
-- Optional automatic Unity detection mode
-- Start Ollama with OLLAMA_MODELS configured
-- Warm/load model and unload model
-- RAM/VRAM/GPU/temperature monitor
-- Unity RAM and llama-server RAM monitor
-- Configurable paths/model/context/light layers/keep-alive
-- Local data backup
-- No cloud AI endpoint
+New in 1.2.3:
+- Model-independent Knowledge Libraries
+- Separate local Knowledge storage
+- PDF and DOCX ingestion
+- Plain-text/code/folder ingestion
+- Local chunk index and bounded retrieval
+- Per-chat library selection
+- Source metadata/chips
+- Knowledge search tester
+- Future-model portability (e.g. 120B can reuse the same Data + Knowledge)
 
-DEFAULT LOCAL PATHS
-- Ollama: D:\LocalAI\Ollama\ollama.exe
-- Models: D:\LocalAI\Models
-- Data: D:\LocalAI\NexaAI\Data when D:\LocalAI exists
+Static validation performed before delivery:
+- node --check main.js: PASS
+- node --check preload.js: PASS
+- node --check src/app.js: PASS
+- node --test scripts/nexa-baseline.test.js: 10/10 PASS
+- validate-delivery.js: PASS
+- validate-project.js: PASS
 
-MODEL
-- gpt-oss:20b
-- one model copy only
-- context: 4096
-
-NEXT DELIVERY STEP
-Connect repository somosanimales239-cmd/Nexa-IA in Nexa App Builder Pro, use the included one-shot prompt if the platform is generating the workspace, then run Push to GitHub & Build once and let the existing workflow finish verification.
+Runtime dependencies pdfjs-dist and mammoth are declared in package.json. package-lock.json is intentionally omitted so the existing Nexa build workflow can generate a fresh portable lock before install.

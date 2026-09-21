@@ -17,11 +17,7 @@ function on(channel, callback) {
 contextBridge.exposeInMainWorld('nexa', {
   app: Object.freeze({
     platform: process.platform,
-    versions: Object.freeze({
-      node: process.versions.node,
-      chrome: process.versions.chrome,
-      electron: process.versions.electron,
-    }),
+    versions: Object.freeze({ node: process.versions.node, chrome: process.versions.chrome, electron: process.versions.electron }),
   }),
   store: Object.freeze({
     get: () => ipcRenderer.invoke('store:get'),
@@ -40,6 +36,7 @@ contextBridge.exposeInMainWorld('nexa', {
   system: Object.freeze({
     stats: () => ipcRenderer.invoke('system:stats'),
     openDataFolder: () => ipcRenderer.invoke('system:open-data'),
+    openKnowledgeFolder: () => ipcRenderer.invoke('system:open-knowledge'),
   }),
   chat: Object.freeze({
     start: payload => ipcRenderer.invoke('chat:start', payload),
@@ -47,5 +44,20 @@ contextBridge.exposeInMainWorld('nexa', {
     onToken: callback => on('chat:token', callback),
     onDone: callback => on('chat:done', callback),
     onError: callback => on('chat:error', callback),
+    onContext: callback => on('chat:context', callback),
+  }),
+  knowledge: Object.freeze({
+    list: () => ipcRenderer.invoke('knowledge:list'),
+    create: input => ipcRenderer.invoke('knowledge:create', input),
+    update: (libraryId, patch) => ipcRenderer.invoke('knowledge:update', libraryId, patch),
+    delete: libraryId => ipcRenderer.invoke('knowledge:delete', libraryId),
+    removeDocument: (libraryId, documentId) => ipcRenderer.invoke('knowledge:remove-document', libraryId, documentId),
+    chooseFiles: () => ipcRenderer.invoke('knowledge:choose-files'),
+    chooseFolder: () => ipcRenderer.invoke('knowledge:choose-folder'),
+    addFiles: (libraryId, files) => ipcRenderer.invoke('knowledge:add-files', libraryId, files),
+    search: (query, options) => ipcRenderer.invoke('knowledge:search', query, options),
+    openRoot: () => ipcRenderer.invoke('knowledge:open-root'),
+    openLibrary: libraryId => ipcRenderer.invoke('knowledge:open-library', libraryId),
+    onProgress: callback => on('knowledge:progress', callback),
   }),
 });

@@ -11,23 +11,22 @@
   <div class="app-shell" data-testid="app-shell">
     <aside class="sidebar">
       <div class="brand-row">
-        <div class="brand-mark">N</div>
+        <div class="brand-mark brand-logo-shell"><img class="brand-logo" src="../assets/logo-128.png" alt="Nexa AI" /></div>
         <div>
           <div class="brand-name">Nexa AI</div>
-          <div class="brand-sub">Local Control Center</div>
+          <div class="brand-sub">Local Intelligence</div>
         </div>
       </div>
 
       <button class="primary full" id="newChatBtn" data-testid="new-chat">+ Nuevo chat</button>
-      <div class="search-wrap">
-        <input id="chatSearch" data-testid="chat-search" type="search" placeholder="Buscar chats…" autocomplete="off" />
-      </div>
+      <div class="search-wrap"><input id="chatSearch" data-testid="chat-search" type="search" placeholder="Buscar chats…" autocomplete="off" /></div>
       <div class="section-label">Conversaciones</div>
       <div id="chatList" class="chat-list" data-testid="chat-list"></div>
 
       <div class="sidebar-bottom">
         <button class="nav-button active" data-panel="system" data-testid="panel-system">◈ Sistema</button>
         <button class="nav-button" data-panel="memory" data-testid="panel-memory">◉ Memoria</button>
+        <button class="nav-button" data-panel="knowledge" data-testid="panel-knowledge">▣ Knowledge</button>
         <button class="nav-button" data-panel="settings" data-testid="panel-settings">⚙ Ajustes</button>
       </div>
     </aside>
@@ -41,33 +40,35 @@
             <span id="engineText">Ollama desconectado</span>
             <span class="separator">•</span>
             <span id="modelText">gpt-oss:20b</span>
+            <span class="separator">•</span>
+            <span id="knowledgeTopStatus">Knowledge local</span>
           </div>
         </div>
 
         <div class="mode-control" data-testid="mode-control">
           <button id="fastModeBtn" class="mode-button active" data-mode="fast" data-testid="mode-fast">
-            <span class="mode-icon">⚡</span>
-            <span><strong>Rápido</strong><small>Más GPU</small></span>
+            <span class="mode-icon">⚡</span><span><strong>Rápido</strong><small>Más GPU</small></span>
           </button>
           <button id="lightModeBtn" class="mode-button" data-mode="light" data-testid="mode-light">
-            <span class="mode-icon">◐</span>
-            <span><strong>Ligero</strong><small>Unity + IA</small></span>
+            <span class="mode-icon">◐</span><span><strong>Ligero</strong><small>Unity + IA</small></span>
           </button>
         </div>
       </header>
 
       <section id="welcomeState" class="welcome-state">
-        <div class="welcome-orbit"><div class="welcome-core">N</div></div>
+        <div class="welcome-orbit"><div class="welcome-core welcome-logo-shell"><img class="welcome-logo" src="../assets/logo-256.png" alt="Nexa AI" /></div></div>
         <h1>Tu IA vive aquí.</h1>
-        <p>Chat local con gpt-oss:20b, memoria persistente y control de CPU/GPU desde una sola aplicación.</p>
+        <p>Chat, memoria y Knowledge Libraries permanecen locales e independientes del modelo. Puedes cambiar de 20B a otro modelo en el futuro sin perder tu conocimiento.</p>
         <div class="welcome-actions">
           <button id="welcomeStartEngine" class="primary" data-testid="start-engine-welcome">Iniciar motor local</button>
           <button id="welcomeWarmModel" class="secondary" data-testid="warm-model-welcome">Cargar modelo</button>
         </div>
-        <div class="privacy-note">Todo el chat y la memoria se guardan localmente. No requiere Internet para responder.</div>
+        <div class="privacy-note">Offline real • Datos externos al modelo • Knowledge reutilizable por futuros modelos</div>
       </section>
 
       <section id="messages" class="messages" data-testid="messages" hidden></section>
+
+      <button id="jumpToBottomBtn" class="jump-to-bottom" data-testid="jump-to-bottom" title="Ir al final" hidden>↓ Ir al final</button>
 
       <div class="composer-wrap">
         <div id="generationBanner" class="generation-banner" hidden>
@@ -86,22 +87,16 @@
 
     <aside class="inspector" id="inspector">
       <div class="inspector-head">
-        <div>
-          <strong id="inspectorTitle">Sistema</strong>
-          <small id="inspectorSubtitle">Estado local en tiempo real</small>
-        </div>
+        <div><strong id="inspectorTitle">Sistema</strong><small id="inspectorSubtitle">Estado local en tiempo real</small></div>
         <button id="refreshBtn" class="icon-button" title="Actualizar">↻</button>
       </div>
 
       <section class="panel active" data-panel-view="system" data-testid="system-panel">
         <div class="status-card engine-card">
-          <div class="card-topline">
-            <span>Motor Ollama</span>
-            <span id="ollamaBadge" class="badge red">Offline</span>
-          </div>
+          <div class="card-topline"><span>Motor Ollama</span><span id="ollamaBadge" class="badge red">Offline</span></div>
           <div class="engine-actions">
             <button id="startEngineBtn" class="secondary small" data-testid="start-engine">Iniciar</button>
-            <button id="warmModelBtn" class="secondary small" data-testid="warm-model">Cargar 20B</button>
+            <button id="warmModelBtn" class="secondary small" data-testid="warm-model">Cargar modelo</button>
             <button id="unloadModelBtn" class="secondary small" data-testid="unload-model">Liberar IA</button>
           </div>
         </div>
@@ -109,20 +104,13 @@
         <div class="metric-card">
           <div class="metric-header"><span>RAM del sistema</span><strong id="ramLabel">—</strong></div>
           <div class="meter"><div id="ramBar" class="meter-fill"></div></div>
-          <div class="metric-grid two">
-            <div><small>IA</small><strong id="aiRam">—</strong></div>
-            <div><small>Unity</small><strong id="unityRam">—</strong></div>
-          </div>
+          <div class="metric-grid two"><div><small>IA</small><strong id="aiRam">—</strong></div><div><small>Unity</small><strong id="unityRam">—</strong></div></div>
         </div>
 
         <div class="metric-card">
-          <div class="metric-header"><span>VRAM GTX 1070 Ti</span><strong id="vramLabel">—</strong></div>
+          <div class="metric-header"><span>VRAM NVIDIA</span><strong id="vramLabel">—</strong></div>
           <div class="meter"><div id="vramBar" class="meter-fill"></div></div>
-          <div class="metric-grid three">
-            <div><small>IA</small><strong id="aiVram">—</strong></div>
-            <div><small>Otros</small><strong id="otherVram">—</strong></div>
-            <div><small>GPU</small><strong id="gpuUsage">—</strong></div>
-          </div>
+          <div class="metric-grid three"><div><small>IA</small><strong id="aiVram">—</strong></div><div><small>Otros</small><strong id="otherVram">—</strong></div><div><small>GPU</small><strong id="gpuUsage">—</strong></div></div>
           <div class="temperature-row"><span>Temperatura</span><strong id="gpuTemp">—</strong></div>
         </div>
 
@@ -138,16 +126,40 @@
       </section>
 
       <section class="panel" data-panel-view="memory" data-testid="memory-panel">
-        <div class="panel-intro">La memoria es independiente del modelo. Puedes cambiar o borrar recuerdos sin reentrenar la IA.</div>
+        <div class="panel-intro">La memoria vive fuera de gpt-oss. Cambiar a otro modelo no la borra ni la reentrena.</div>
         <form id="memoryForm" class="memory-form">
-          <textarea id="memoryInput" data-testid="memory-input" rows="4" placeholder="Ejemplo: Mi proyecto de Unity usa la versión 6000.3.22f1."></textarea>
+          <textarea id="memoryInput" data-testid="memory-input" rows="4" placeholder="Ejemplo: Para este proyecto no modificar Price Manager."></textarea>
           <button class="primary full" type="submit" data-testid="save-memory">Guardar memoria</button>
         </form>
-        <div class="memory-toolbar">
-          <span id="memoryCount">0 recuerdos</span>
-          <label class="toggle-row compact"><input id="includeMemories" type="checkbox" checked /><span>Usar en respuestas</span></label>
-        </div>
+        <div class="memory-toolbar"><span id="memoryCount">0 recuerdos</span><label class="toggle-row compact"><input id="includeMemories" type="checkbox" checked /><span>Usar en respuestas</span></label></div>
         <div id="memoryList" class="memory-list" data-testid="memory-list"></div>
+      </section>
+
+      <section class="panel" data-panel-view="knowledge" data-testid="knowledge-panel">
+        <div class="panel-intro"><strong>Knowledge Libraries</strong><br />Importa libros, manuales, PDFs, DOCX, texto o código. Nexa los indexa localmente y los futuros modelos pueden reutilizar el mismo conocimiento.</div>
+        <form id="libraryForm" class="library-form">
+          <input id="libraryName" data-testid="library-name" placeholder="Nombre: Toyota Corolla 2021" maxlength="120" />
+          <input id="libraryCategory" placeholder="Categoría: Automotive / Science / Unity" maxlength="80" />
+          <button class="primary full" type="submit" data-testid="create-library">+ Crear Knowledge Library</button>
+        </form>
+
+        <div id="knowledgeProgress" class="knowledge-progress" hidden>
+          <div class="progress-top"><span id="knowledgeProgressText">Indexando…</span><span id="knowledgeProgressPct">0%</span></div>
+          <div class="meter"><div id="knowledgeProgressBar" class="meter-fill"></div></div>
+        </div>
+
+        <div class="knowledge-toolbar">
+          <span id="knowledgeCount">0 librerías</span>
+          <label class="toggle-row compact"><input id="includeKnowledge" type="checkbox" checked /><span>Usar conocimiento</span></label>
+        </div>
+        <div id="libraryList" class="library-list" data-testid="library-list"></div>
+
+        <div class="knowledge-test">
+          <div class="section-label">Probar búsqueda local</div>
+          <div class="inline-search"><input id="knowledgeSearchInput" placeholder="Ej: torque alternator Corolla" /><button id="knowledgeSearchBtn" class="secondary small" type="button">Buscar</button></div>
+          <div id="knowledgeSearchResults" class="knowledge-search-results"></div>
+        </div>
+        <button id="openKnowledgeBtn" class="secondary full" type="button">Abrir carpeta Knowledge</button>
       </section>
 
       <section class="panel" data-panel-view="settings" data-testid="settings-panel">
@@ -158,18 +170,19 @@
           <label>Carpeta de modelos<input id="settingModelsPath" /></label>
           <div class="settings-grid">
             <label>Contexto<input id="settingContext" type="number" min="1024" max="32768" step="1024" /></label>
-            <label>Capas GPU modo Ligero<input id="settingLightLayers" data-testid="light-gpu-layers" type="number" min="0" max="99" /></label>
+            <label>Capas GPU Ligero<input id="settingLightLayers" data-testid="light-gpu-layers" type="number" min="0" max="99" /></label>
+          </div>
+          <div class="settings-grid">
+            <label>Chunks Knowledge<input id="settingKnowledgeChunks" type="number" min="1" max="20" /></label>
+            <label>Chars Knowledge<input id="settingKnowledgeChars" type="number" min="1500" max="24000" step="500" /></label>
           </div>
           <label>Keep alive<input id="settingKeepAlive" placeholder="5m" /></label>
           <label class="toggle-row"><input id="settingAutoUnity" type="checkbox" /><span>Cambiar automáticamente a Ligero al detectar Unity</span></label>
           <button class="primary full" type="submit" data-testid="save-settings">Guardar ajustes</button>
           <button id="openDataBtn" class="secondary full" type="button">Abrir carpeta de datos</button>
         </form>
-        <div class="settings-note">
-          <strong>Importante</strong>
-          <p>Rápido usa la selección automática de GPU de Ollama. Ligero limita las capas GPU al valor indicado arriba. Cambiar de modo libera el modelo para que se recargue con el nuevo reparto.</p>
-        </div>
-        <div class="version-line">Nexa AI <span id="versionLabel">v1.0.0</span></div>
+        <div class="settings-note"><strong>Datos independientes del modelo</strong><p>Chats y memoria viven en Data. Knowledge Libraries viven en Knowledge. Instalar otro modelo, por ejemplo 120B, no cambia estos datos.</p></div>
+        <div class="version-line">Nexa AI <span id="versionLabel">v1.2.3</span></div>
       </section>
     </aside>
   </div>

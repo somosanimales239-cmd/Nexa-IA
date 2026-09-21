@@ -1,21 +1,22 @@
 {
   "name": "nexa-ai-local",
-  "version": "1.0.0",
-  "description": "Nexa AI - local chat, memory and Ollama performance control for Windows",
+  "version": "1.2.3",
+  "description": "Nexa AI - local chat, persistent memory, model-independent Knowledge Libraries, desktop branding, reliable chat scrolling and Ollama performance control for Windows",
   "main": "main.js",
   "author": "Nexa AI",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && npm run validate:renderer && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "build:linux": "npm run validate && electron-builder --linux AppImage deb --publish never",
     "build:mac": "npm run validate && electron-builder --mac dmg zip --publish never",
     "validate:delivery": "node scripts/validate-delivery.js",
     "validate:project": "node scripts/validate-project.js",
     "test": "node --test scripts/nexa-baseline.test.js",
-    "ui:smoke": "electron scripts/ui-smoke.js"
+    "ui:smoke": "electron scripts/ui-smoke.js",
+    "validate:renderer": "node scripts/validate-renderer-compat.js"
   },
   "devDependencies": {
     "electron": "43.1.0",
@@ -25,20 +26,38 @@
     "appId": "com.nexa.localai",
     "productName": "Nexa AI",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "assets"
     },
     "files": [
       "main.js",
       "preload.js",
       "src/**/*",
-      "package.json"
+      "package.json",
+      "assets/**/*"
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] },
-        { "target": "zip", "arch": ["x64"] }
-      ]
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -56,17 +75,49 @@
       "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
     },
     "linux": {
-      "target": [{ "target": "AppImage", "arch": ["x64"] }, { "target": "deb", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "category": "Utility",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "icon": "assets/logo-512.png"
     },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "category": "public.app-category.utilities",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "icon": "assets/logo-512.png"
     }
   },
   "engines": {
     "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "mammoth": "1.10.0",
+    "pdfjs-dist": "5.4.149"
   }
 }
