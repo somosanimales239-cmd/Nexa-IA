@@ -1,3 +1,9 @@
+## 1.2.4
+- Fixed GitHub Actions build failure caused by a stale package-lock.json left from older versions.
+- The Windows workflow now detects version/dependency mismatches in package-lock.json and regenerates it automatically from package.json before npm ci.
+- This specifically recovers missing Knowledge dependencies such as mammoth and pdfjs-dist without requiring manual repository cleanup.
+- Preserves the Nexa AI logo, chat scrollbar, floating Ir al final button, Knowledge Libraries, memory and performance profiles.
+
 ## 1.2.3
 - Fixed App Builder parsing failure in `src/app.js` by removing JavaScript regular-expression literals from renderer code while preserving identical behavior.
 - Kept the conversation scrollbar and translucent `↓ Ir al final` button.

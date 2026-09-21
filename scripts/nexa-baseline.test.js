@@ -14,7 +14,7 @@ const html = read('src/index.html');
 
 test('Nexa AI package and Electron entry graph are valid', () => {
   assert.equal(packageJson.build.productName, 'Nexa AI');
-  assert.equal(packageJson.version, '1.2.3');
+  assert.equal(packageJson.version, '1.2.4');
   assert.ok(fs.existsSync(path.join(root, packageJson.main)));
   for (const file of ['preload.js','src/index.html','src/app.js','src/app.css']) assert.ok(fs.existsSync(path.join(root, file)), file);
 });

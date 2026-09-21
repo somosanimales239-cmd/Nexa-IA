@@ -84,11 +84,21 @@ jobs:
           New-Item -ItemType Directory -Force -Path artifacts | Out-Null
           $mustGenerate = -not (Test-Path package-lock.json)
           if (-not $mustGenerate) {
+            # NEXA_STALE_LOCK_RECOVERY_V1
+            node -e 'const fs=require("fs");const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));const lock=JSON.parse(fs.readFileSync("package-lock.json","utf8"));const deps={...(pkg.dependencies||{}),...(pkg.devDependencies||{})};const root=(lock.packages&&lock.packages[""])||{};const missing=Object.keys(deps).filter(name=>!lock.packages||!Object.prototype.hasOwnProperty.call(lock.packages,`node_modules/${name}`));const staleVersion=String(root.version||lock.version||"")!==String(pkg.version||"");if(staleVersion||missing.length){console.error(`STALE_LOCK version=${root.version||lock.version||"missing"} expected=${pkg.version}; missing=${missing.join(",")||"none"}`);process.exit(42)}console.log("Existing package-lock.json matches package.json.");'
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "Existing package-lock.json is stale or incomplete. Regenerating from package.json..."
+              Remove-Item package-lock.json -Force -ErrorAction SilentlyContinue
+              $mustGenerate = $true
+            }
+          }
+          if (-not $mustGenerate) {
             node -e 'const fs=require("fs");const path="package-lock.json";const lock=JSON.parse(fs.readFileSync(path,"utf8"));let removed=0;const hosts={};function walk(value){if(!value||typeof value!=="object")return;if(typeof value.resolved==="string"&&typeof value.integrity==="string"&&/^https?:\/\//i.test(value.resolved)){let parsed=null;try{parsed=new URL(value.resolved)}catch{}if(parsed&&/\.tgz$/i.test(parsed.pathname)){hosts[parsed.hostname]=(hosts[parsed.hostname]||0)+1;delete value.resolved;removed++}}for(const child of Object.values(value))walk(child)}walk(lock);fs.mkdirSync("artifacts",{recursive:true});fs.writeFileSync("artifacts/dependency-lock-portability.json",JSON.stringify({removed_registry_endpoints:removed,hosts},null,2));if(removed)fs.writeFileSync(path,JSON.stringify(lock,null,2)+"\n");console.log(`Portable dependency lock: removed ${removed} environment-specific registry endpoint(s).`);'
           }
           if ($mustGenerate) {
             npm install --package-lock-only --ignore-scripts --no-audit --no-fund --omit-lockfile-registry-resolved
             if ($LASTEXITCODE -ne 0) { throw "npm could not resolve a portable package-lock.json" }
+            node -e 'const fs=require("fs");fs.mkdirSync("artifacts",{recursive:true});fs.writeFileSync("artifacts/dependency-lock-portability.json",JSON.stringify({regenerated:true,reason:"stale-or-missing-lock"},null,2));'
           }
           if (-not (Test-Path package-lock.json)) { throw "package-lock.json was not generated" }
           node -e 'const fs=require("fs");const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));const lock=JSON.parse(fs.readFileSync("package-lock.json","utf8"));if(!lock.packages||!Object.prototype.hasOwnProperty.call(lock.packages,""))throw new Error("package-lock.json has no root package record");const deps={...(pkg.dependencies||{}),...(pkg.devDependencies||{})};const missing=Object.keys(deps).filter(name=>!Object.prototype.hasOwnProperty.call(lock.packages,`node_modules/${name}`));if(missing.length)throw new Error(`package-lock.json is missing resolved dependencies: ${missing.join(", ")}`);let unsafe=0;function walk(v){if(!v||typeof v!=="object")return;if(typeof v.resolved==="string"&&typeof v.integrity==="string"&&/^https?:\/\//i.test(v.resolved)){let u;try{u=new URL(v.resolved)}catch{}if(u&&/\.tgz$/i.test(u.pathname))unsafe++;}for(const x of Object.values(v))walk(x)}walk(lock);if(unsafe)throw new Error(`package-lock.json still contains ${unsafe} environment-specific registry endpoint(s)`);console.log(`Dependency lock verified for ${Object.keys(deps).length} declared package(s).`);'

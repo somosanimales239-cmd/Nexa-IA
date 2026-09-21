@@ -8,7 +8,7 @@ const http = require('http');
 const { spawn, execFile } = require('child_process');
 const crypto = require('crypto');
 
-const APP_VERSION = '1.2.3';
+const APP_VERSION = '1.2.4';
 const DEFAULTS = Object.freeze({
   model: 'gpt-oss:20b',
   baseUrl: 'http://127.0.0.1:11434',

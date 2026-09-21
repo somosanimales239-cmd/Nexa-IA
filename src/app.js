@@ -677,7 +677,7 @@ async function init() {
   state.settings = snapshot.settings || {}; state.chats = snapshot.chats || []; state.memories = snapshot.memories || [];
   state.libraries = knowledge?.libraries || []; state.knowledgeRoot = knowledge?.root || snapshot.knowledgeDirectory || '';
   state.currentChatId = state.chats[0]?.id || null;
-  els.versionLabel.textContent = `v${snapshot.appVersion || '1.2.3'}`;
+  els.versionLabel.textContent = `v${snapshot.appVersion || '1.2.4'}`;
   fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
   await refreshStats(); state.statsTimer = setInterval(refreshStats,2500);
 }
