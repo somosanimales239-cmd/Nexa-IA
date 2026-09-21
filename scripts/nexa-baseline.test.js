@@ -14,7 +14,7 @@ const html = read('src/index.html');
 
 test('Nexa AI package and Electron entry graph are valid', () => {
   assert.equal(packageJson.build.productName, 'Nexa AI');
-  assert.equal(packageJson.version, '1.3.1');
+  assert.equal(packageJson.version, '1.3.2');
   assert.ok(fs.existsSync(path.join(root, packageJson.main)));
   for (const file of ['preload.js','src/index.html','src/app.js','src/app.css']) assert.ok(fs.existsSync(path.join(root, file)), file);
 });
@@ -159,7 +159,9 @@ test('web research is opt-in controllable, source ranked, validated and persiste
   assert.match(main, /internetResearchEnabled/);
   assert.match(main, /autoResearchOnMissing/);
   assert.match(main, /researchTopic/);
-  assert.match(main, /ollamaResearchJson/);
+  assert.match(main, /ollamaResearchValidation/);
+  assert.match(main, /generate-protocol-think-off/);
+  assert.match(main, /safePartialFromText/);
   assert.match(main, /knowledgeDb\.saveKnowledge/);
   assert.match(appJs, /Completar faltantes/);
   assert.match(html, /Permitir investigación por Internet/);

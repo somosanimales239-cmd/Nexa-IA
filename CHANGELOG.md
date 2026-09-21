@@ -1,3 +1,10 @@
+## 1.3.2
+- Replaced brittle gpt-oss JSON validation with a robust plain-text Nexa validation protocol.
+- Added two validation attempts (thinking disabled first, default thinking second) without relying on Ollama structured-output JSON mode.
+- Added JSON/protocol parsers plus a safe PARTIAL fallback so web research no longer dies solely because the model emitted non-JSON text.
+- Research diagnostics are persisted with the research run for future troubleshooting.
+- Preserved persistent SQLite knowledge, web search fallbacks, custom scrollbar, transparent jump button, and branded icon.
+
 ## 1.3.1
 - Fixed Internet research failures caused by relying on a single DuckDuckGo HTML endpoint.
 - Added multi-provider fallback search: DuckDuckGo HTML, DuckDuckGo Lite, Bing RSS, and Bing HTML.

@@ -935,7 +935,7 @@ async function init() {
   state.libraries = knowledge?.libraries || []; state.knowledgeRoot = knowledge?.root || snapshot.knowledgeDirectory || '';
   state.objectives = Array.isArray(initData[2]) ? initData[2] : []; state.knowledgeDbStats = initData[3] || null;
   state.currentChatId = state.chats[0]?.id || null;
-  els.versionLabel.textContent = `v${snapshot.appVersion || '1.3.0'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.3.0'}`;
+  els.versionLabel.textContent = `v${snapshot.appVersion || '1.3.2'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.3.2'}`;
   fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderPersistentKnowledge(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
   els.objectiveAutomotiveFields.hidden = els.objectiveType.value !== 'automotive';
   await refreshStats(); state.statsTimer = setInterval(refreshStats,2500);

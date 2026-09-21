@@ -1,4 +1,4 @@
-# NEXA AI 1.3.1 — ONE-SHOT APP BUILDER PROMPT
+# NEXA AI 1.3.2 — ONE-SHOT APP BUILDER PROMPT
 
 Repository: `somosanimales239-cmd/Nexa-IA`
 
@@ -8,7 +8,7 @@ Use the exact project source in this package as the desired implementation. Pres
 
 ## Required result
 
-Nexa AI 1.3.1 must keep its local Ollama architecture while adding a real model-independent persistent SQLite knowledge database and optional source-traced Internet research.
+Nexa AI 1.3.2 must keep its local Ollama architecture while adding a real model-independent persistent SQLite knowledge database and optional source-traced Internet research.
 
 ### Persistent knowledge
 
@@ -68,4 +68,4 @@ Preserve the custom visible chat scrollbar and semi-transparent `Ir al final` bu
 
 Run `npm run validate`. It must include the persistent knowledge test and all baseline tests. Then run the existing Windows workflow to completion and deliver Installer EXE, Portable EXE and ZIP.
 
-Application version: `1.3.1`.
+Application version: `1.3.2`.

@@ -1,6 +1,6 @@
 # NEXA-03 — Persistent Knowledge + Verified Web Research
 
-Update **Nexa AI to 1.3.1** as one complete update. Preserve every working feature from prior versions, including the custom chat scrollbar, transparent jump-to-bottom button and branded desktop/installer icon.
+Update **Nexa AI to 1.3.2** as one complete update. Preserve every working feature from prior versions, including the custom chat scrollbar, transparent jump-to-bottom button and branded desktop/installer icon.
 
 ## Core rule
 
