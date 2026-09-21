@@ -1,0 +1,39 @@
+NEXA AI 1.0.0 — FIRST VERSION SOURCE REPORT
+
+STATUS
+- Source implementation: COMPLETE
+- Static JavaScript syntax checks: PASS
+- Nexa delivery validator: PASS
+- Nexa project validator: PASS
+- Application acceptance tests: 8/8 PASS
+- Electron UI smoke: must run in the GitHub/Nexa Windows build environment where Electron dependencies are installed
+- Windows installer/portable/ZIP: must be produced by the Nexa Windows workflow
+
+CORE FEATURES
+- Local Ollama gpt-oss:20b streaming chat
+- Persistent chats: new/select/rename/search/delete
+- Persistent local memory: add/save-from-message/enable/delete
+- Fast mode: Ollama automatic GPU offload
+- Light mode: real num_gpu control, default 6 GPU layers
+- Profile switch unloads model so same model reloads under new profile
+- Optional automatic Unity detection mode
+- Start Ollama with OLLAMA_MODELS configured
+- Warm/load model and unload model
+- RAM/VRAM/GPU/temperature monitor
+- Unity RAM and llama-server RAM monitor
+- Configurable paths/model/context/light layers/keep-alive
+- Local data backup
+- No cloud AI endpoint
+
+DEFAULT LOCAL PATHS
+- Ollama: D:\LocalAI\Ollama\ollama.exe
+- Models: D:\LocalAI\Models
+- Data: D:\LocalAI\NexaAI\Data when D:\LocalAI exists
+
+MODEL
+- gpt-oss:20b
+- one model copy only
+- context: 4096
+
+NEXT DELIVERY STEP
+Connect repository somosanimales239-cmd/Nexa-IA in Nexa App Builder Pro, use the included one-shot prompt if the platform is generating the workspace, then run Push to GitHub & Build once and let the existing workflow finish verification.

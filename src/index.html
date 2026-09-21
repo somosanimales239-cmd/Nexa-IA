@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self';" />
+  <title>Nexa AI</title>
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <div class="app-shell" data-testid="app-shell">
+    <aside class="sidebar">
+      <div class="brand-row">
+        <div class="brand-mark">N</div>
+        <div>
+          <div class="brand-name">Nexa AI</div>
+          <div class="brand-sub">Local Control Center</div>
+        </div>
+      </div>
+
+      <button class="primary full" id="newChatBtn" data-testid="new-chat">+ Nuevo chat</button>
+      <div class="search-wrap">
+        <input id="chatSearch" data-testid="chat-search" type="search" placeholder="Buscar chats…" autocomplete="off" />
+      </div>
+      <div class="section-label">Conversaciones</div>
+      <div id="chatList" class="chat-list" data-testid="chat-list"></div>
+
+      <div class="sidebar-bottom">
+        <button class="nav-button active" data-panel="system" data-testid="panel-system">◈ Sistema</button>
+        <button class="nav-button" data-panel="memory" data-testid="panel-memory">◉ Memoria</button>
+        <button class="nav-button" data-panel="settings" data-testid="panel-settings">⚙ Ajustes</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="chat-title-wrap">
+          <input id="chatTitle" class="chat-title" data-testid="chat-title" value="Nuevo chat" maxlength="120" />
+          <div class="subline">
+            <span id="engineDot" class="status-dot offline"></span>
+            <span id="engineText">Ollama desconectado</span>
+            <span class="separator">•</span>
+            <span id="modelText">gpt-oss:20b</span>
+          </div>
+        </div>
+
+        <div class="mode-control" data-testid="mode-control">
+          <button id="fastModeBtn" class="mode-button active" data-mode="fast" data-testid="mode-fast">
+            <span class="mode-icon">⚡</span>
+            <span><strong>Rápido</strong><small>Más GPU</small></span>
+          </button>
+          <button id="lightModeBtn" class="mode-button" data-mode="light" data-testid="mode-light">
+            <span class="mode-icon">◐</span>
+            <span><strong>Ligero</strong><small>Unity + IA</small></span>
+          </button>
+        </div>
+      </header>
+
+      <section id="welcomeState" class="welcome-state">
+        <div class="welcome-orbit"><div class="welcome-core">N</div></div>
+        <h1>Tu IA vive aquí.</h1>
+        <p>Chat local con gpt-oss:20b, memoria persistente y control de CPU/GPU desde una sola aplicación.</p>
+        <div class="welcome-actions">
+          <button id="welcomeStartEngine" class="primary" data-testid="start-engine-welcome">Iniciar motor local</button>
+          <button id="welcomeWarmModel" class="secondary" data-testid="warm-model-welcome">Cargar modelo</button>
+        </div>
+        <div class="privacy-note">Todo el chat y la memoria se guardan localmente. No requiere Internet para responder.</div>
+      </section>
+
+      <section id="messages" class="messages" data-testid="messages" hidden></section>
+
+      <div class="composer-wrap">
+        <div id="generationBanner" class="generation-banner" hidden>
+          <span class="pulse-dot"></span><span>Generando localmente…</span>
+          <button id="stopBtn" class="tiny danger" data-testid="stop-generation">Detener</button>
+        </div>
+        <div class="composer">
+          <textarea id="promptInput" data-testid="prompt-input" rows="1" placeholder="Escribe a Nexa AI… (Enter para enviar, Shift+Enter para nueva línea)"></textarea>
+          <div class="composer-actions">
+            <span id="composerHint" class="composer-hint">Local • 4096 ctx</span>
+            <button id="sendBtn" class="send-button" data-testid="send-message" aria-label="Enviar">➜</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="inspector" id="inspector">
+      <div class="inspector-head">
+        <div>
+          <strong id="inspectorTitle">Sistema</strong>
+          <small id="inspectorSubtitle">Estado local en tiempo real</small>
+        </div>
+        <button id="refreshBtn" class="icon-button" title="Actualizar">↻</button>
+      </div>
+
+      <section class="panel active" data-panel-view="system" data-testid="system-panel">
+        <div class="status-card engine-card">
+          <div class="card-topline">
+            <span>Motor Ollama</span>
+            <span id="ollamaBadge" class="badge red">Offline</span>
+          </div>
+          <div class="engine-actions">
+            <button id="startEngineBtn" class="secondary small" data-testid="start-engine">Iniciar</button>
+            <button id="warmModelBtn" class="secondary small" data-testid="warm-model">Cargar 20B</button>
+            <button id="unloadModelBtn" class="secondary small" data-testid="unload-model">Liberar IA</button>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header"><span>RAM del sistema</span><strong id="ramLabel">—</strong></div>
+          <div class="meter"><div id="ramBar" class="meter-fill"></div></div>
+          <div class="metric-grid two">
+            <div><small>IA</small><strong id="aiRam">—</strong></div>
+            <div><small>Unity</small><strong id="unityRam">—</strong></div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header"><span>VRAM GTX 1070 Ti</span><strong id="vramLabel">—</strong></div>
+          <div class="meter"><div id="vramBar" class="meter-fill"></div></div>
+          <div class="metric-grid three">
+            <div><small>IA</small><strong id="aiVram">—</strong></div>
+            <div><small>Otros</small><strong id="otherVram">—</strong></div>
+            <div><small>GPU</small><strong id="gpuUsage">—</strong></div>
+          </div>
+          <div class="temperature-row"><span>Temperatura</span><strong id="gpuTemp">—</strong></div>
+        </div>
+
+        <div class="status-card">
+          <div class="card-topline"><span>Perfil activo</span><span id="profileBadge" class="badge lime">RÁPIDO</span></div>
+          <p id="profileDescription">Ollama decide automáticamente cuántas capas colocar en GPU.</p>
+        </div>
+
+        <div class="status-card unity-card">
+          <div class="card-topline"><span>Unity</span><span id="unityBadge" class="badge muted">No detectado</span></div>
+          <p id="unityAdvice">Cuando Unity esté abierto, el modo Ligero deja más VRAM disponible.</p>
+        </div>
+      </section>
+
+      <section class="panel" data-panel-view="memory" data-testid="memory-panel">
+        <div class="panel-intro">La memoria es independiente del modelo. Puedes cambiar o borrar recuerdos sin reentrenar la IA.</div>
+        <form id="memoryForm" class="memory-form">
+          <textarea id="memoryInput" data-testid="memory-input" rows="4" placeholder="Ejemplo: Mi proyecto de Unity usa la versión 6000.3.22f1."></textarea>
+          <button class="primary full" type="submit" data-testid="save-memory">Guardar memoria</button>
+        </form>
+        <div class="memory-toolbar">
+          <span id="memoryCount">0 recuerdos</span>
+          <label class="toggle-row compact"><input id="includeMemories" type="checkbox" checked /><span>Usar en respuestas</span></label>
+        </div>
+        <div id="memoryList" class="memory-list" data-testid="memory-list"></div>
+      </section>
+
+      <section class="panel" data-panel-view="settings" data-testid="settings-panel">
+        <form id="settingsForm" class="settings-form">
+          <label>Modelo<input id="settingModel" data-testid="setting-model" /></label>
+          <label>Ollama API<input id="settingBaseUrl" /></label>
+          <label>Ruta ollama.exe<input id="settingOllamaExe" /></label>
+          <label>Carpeta de modelos<input id="settingModelsPath" /></label>
+          <div class="settings-grid">
+            <label>Contexto<input id="settingContext" type="number" min="1024" max="32768" step="1024" /></label>
+            <label>Capas GPU modo Ligero<input id="settingLightLayers" data-testid="light-gpu-layers" type="number" min="0" max="99" /></label>
+          </div>
+          <label>Keep alive<input id="settingKeepAlive" placeholder="5m" /></label>
+          <label class="toggle-row"><input id="settingAutoUnity" type="checkbox" /><span>Cambiar automáticamente a Ligero al detectar Unity</span></label>
+          <button class="primary full" type="submit" data-testid="save-settings">Guardar ajustes</button>
+          <button id="openDataBtn" class="secondary full" type="button">Abrir carpeta de datos</button>
+        </form>
+        <div class="settings-note">
+          <strong>Importante</strong>
+          <p>Rápido usa la selección automática de GPU de Ollama. Ligero limita las capas GPU al valor indicado arriba. Cambiar de modo libera el modelo para que se recargue con el nuevo reparto.</p>
+        </div>
+        <div class="version-line">Nexa AI <span id="versionLabel">v1.0.0</span></div>
+      </section>
+    </aside>
+  </div>
+
+  <div id="toastHost" class="toast-host"></div>
+  <script src="app.js"></script>
+</body>
+</html>
