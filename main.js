@@ -13,9 +13,9 @@ const { BrowserBridge } = require('./lib/browser-bridge');
 const { gatherSources, objectiveDescriptor, buildResearchQuery, sourceType } = require('./lib/web-research');
 const { parseResearchValidation, protocolInstructions, safePartialFromText } = require('./lib/research-validation');
 const { meaningfulValue, assessApplicability, fallbackKnowledgeFromEvidence } = require('./lib/research-applicability');
-const { catalogProtocolInstructions, parseVehicleCatalog, genericVariant } = require('./lib/vehicle-catalog');
+const { catalogProtocolInstructions, parseFlexibleVehicleCatalog, fallbackCatalogFromEvidence } = require('./lib/vehicle-catalog');
 
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.6.1';
 const DEFAULTS = Object.freeze({
   model: 'gpt-oss:20b',
   baseUrl: 'http://127.0.0.1:11434',
@@ -1141,7 +1141,7 @@ async function ollamaVehicleCatalogDiscovery(yearRow, sources) {
       const candidates = researchValidationCandidates(response);
       diagnostics.push(`${attempt.endpoint}: candidates=${candidates.length}`);
       for (const candidate of candidates) {
-        const parsed = parseVehicleCatalog(candidate,{ make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market });
+        const parsed = parseFlexibleVehicleCatalog(candidate,{ make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market });
         if (parsed?.variants?.length) return { ...parsed, diagnostics };
       }
     } catch (error) { diagnostics.push(`${attempt.endpoint}: ${error.message || String(error)}`); }
@@ -1149,25 +1149,51 @@ async function ollamaVehicleCatalogDiscovery(yearRow, sources) {
   return { make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market,variants:[],diagnostics,parser:'no-catalog-output' };
 }
 
+async function gatherFactoryDiscoverySources(yearRow) {
+  const objective={ type:'automotive',make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market,name:`${yearRow.make} ${yearRow.model} ${yearRow.year}` };
+  const topic='Vehicle Identification trims engines transmissions body styles drivetrain';
+  const queries=[
+    `${yearRow.year} ${yearRow.make} ${yearRow.model} ${yearRow.market} engine transmission specifications`,
+    `${yearRow.year} ${yearRow.make} ${yearRow.model} brochure engine transmission trims`,
+    `${yearRow.make} ${yearRow.model} ${yearRow.year} engine options gearbox drivetrain`,
+  ];
+  const all=[], diagnostics=[];
+  const seen=new Set();
+  for (const query of queries) {
+    try {
+      const gathered=await gatherFactorySources(objective,topic,{ queryOverride:query,maxSources:Math.max(5,Number(store.state.settings.webMaxSources)||5) });
+      diagnostics.push(...(gathered.providerDiagnostics||[]));
+      for (const item of gathered.results||[]) {
+        const key=String(item.url||'').trim().toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key); all.push(item);
+        if (all.length>=12) break;
+      }
+    } catch (error) { diagnostics.push({ provider:'factory-discovery-query',ok:false,count:0,error:error.message||String(error) }); }
+    if (all.length>=10) break;
+  }
+  return { results:all.slice(0,12), providerDiagnostics:diagnostics, transport:browserBridge?.status()?.extensionWorkerOnline?'browser-extension+fallback':'direct-fallback' };
+}
+
 async function discoverFactoryYear(curriculum, yearRow) {
   knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'DISCOVERING', attempts:Number(yearRow.attempts||0)+1, last_error:'' });
   if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'discovery',curriculumId:curriculum.id,year:yearRow.year,message:`Descubriendo ${yearRow.make} ${yearRow.model} ${yearRow.year}…` });
-  const objective = { type:'automotive',make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market,name:`${yearRow.make} ${yearRow.model} ${yearRow.year}` };
-  const topic = 'Vehicle Identification trims engines transmissions body styles drivetrain';
-  const query = `${yearRow.make} ${yearRow.model} ${yearRow.year} ${yearRow.market} trims engines transmissions specifications official`;
   try {
-    const gathered = await gatherFactorySources(objective,topic,{ queryOverride:query,maxSources:Number(store.state.settings.webMaxSources)||5 });
+    const gathered = await gatherFactoryDiscoverySources(yearRow);
     const sources = gathered.results || [];
     if (!sources.length) throw new Error('No se encontraron fuentes utilizables para descubrir variantes.');
     const catalog = await ollamaVehicleCatalogDiscovery(yearRow,sources);
     if (!catalog.variants?.length) {
-      const attempts = Number(yearRow.attempts||0)+1;
-      if (attempts >= 3) {
-        knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'NEEDS_REVIEW', research_status:'NEEDS_REVIEW', attempts, last_error:'El modelo no pudo estructurar las variantes después de 3 intentos.' });
-        return { ok:false,needsReview:true,reason:'No se pudieron estructurar variantes.' };
+      const fallback = fallbackCatalogFromEvidence(sources,{ make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market });
+      if (fallback?.variants?.length) {
+        catalog.variants = fallback.variants;
+        catalog.parser = fallback.parser;
+        catalog.partial = true;
+      } else {
+        const attempts = Number(yearRow.attempts||0)+1;
+        knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'QUEUED', research_status:'QUEUED', attempts, last_error:'No hubo evidencia exacta suficiente para crear una configuración segura. Se volverá a buscar con consultas alternativas.' });
+        return { ok:false,retry:true,reason:'Sin evidencia exacta suficiente.' };
       }
-      knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'QUEUED', attempts, last_error:'El modelo no devolvió variantes estructuradas; se reintentará.' });
-      return { ok:false,retry:true,reason:'Sin variantes estructuradas.' };
     }
     let created=0;
     for (const variant of catalog.variants) {
@@ -1175,16 +1201,15 @@ async function discoverFactoryYear(curriculum, yearRow) {
       knowledgeDb.upsertFactoryConfig(curriculum.id,yearRow.id,variant,usedSources.length?usedSources:sources.slice(0,3));
       created += 1;
     }
-    knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'COMPLETE', research_status:'RESEARCHING', variant_count:created, total_configs:created, attempts:0, last_error:'' });
+    knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'COMPLETE', research_status:'RESEARCHING', variant_count:created, total_configs:created, attempts:0, last_error:catalog.partial ? 'Discovery parcial: se creó una configuración conservadora desde evidencia exacta; la investigación técnica completará los campos faltantes.' : '' });
     knowledgeDb.refreshFactoryYearProgress(yearRow.id,curriculum.completion_threshold);
     if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'discovered',curriculumId:curriculum.id,year:yearRow.year,variants:created,transport:gathered.transport||'direct',message:`${yearRow.year}: ${created} configuración(es) técnicas detectadas.` });
     return { ok:true,variants:created,transport:gathered.transport||'direct' };
   } catch (error) {
     const attempts = Number(yearRow.attempts||0)+1;
-    const review = attempts >= 3;
-    knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:review?'NEEDS_REVIEW':'QUEUED',research_status:review?'NEEDS_REVIEW':'QUEUED',attempts,last_error:error.message||String(error) });
-    if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'error',curriculumId:curriculum.id,year:yearRow.year,error:error.message||String(error),willRetry:!review });
-    return { ok:false,needsReview:review,error:error.message||String(error) };
+    knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'QUEUED',research_status:'QUEUED',attempts,last_error:error.message||String(error) });
+    if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'error',curriculumId:curriculum.id,year:yearRow.year,error:error.message||String(error),willRetry:true });
+    return { ok:false,retry:true,error:error.message||String(error) };
   }
 }
 
@@ -1252,6 +1277,7 @@ async function runFactoryLoop(curriculumId) {
 function startFactory(curriculumId) {
   const curriculum=knowledgeDb.getFactoryCurriculum(curriculumId);
   if (!curriculum) throw new Error('Curriculum no encontrado.');
+  knowledgeDb.resetFactoryDiscoveryReviews(curriculumId);
   knowledgeDb.setFactoryCurriculumStatus(curriculumId,'RUNNING');
   setImmediate(()=>runFactoryLoop(curriculumId));
   return knowledgeDb.getFactoryCurriculum(curriculumId);

@@ -1,7 +1,7 @@
 {
   "name": "nexa-ai-local",
-  "version": "1.6.0",
-  "description": "Nexa AI - Auto Knowledge Factory, persistent local knowledge, Chrome Browser Bridge worker, model-independent memory, web research and Ollama control",
+  "version": "1.6.1",
+  "description": "Nexa AI - Auto Knowledge Factory discovery repair, persistent local knowledge, Chrome Browser Bridge worker, model-independent memory, web research and Ollama control",
   "main": "main.js",
   "author": "Nexa AI",
   "license": "UNLICENSED",

@@ -439,7 +439,7 @@ async function createFactoryFromForm(event) {
 
 async function showFactoryYears(curriculumId) {
   const years = await window.nexa.factory.years(curriculumId);
-  const lines = (years || []).map(y => y.year + ': ' + y.discovery_status + ' / ' + y.research_status + ' / ' + Math.round(Number(y.coverage||0)*100) + '%');
+  const lines = (years || []).map(y => y.year + ': ' + y.discovery_status + ' / ' + y.research_status + ' / ' + Math.round(Number(y.coverage||0)*100) + '%' + (y.last_error ? ('\n  ↳ ' + y.last_error) : ''));
   window.alert(lines.join('\n') || 'No hay años en esta lista.');
 }
 
@@ -1076,7 +1076,7 @@ async function init() {
   state.libraries = knowledge?.libraries || []; state.knowledgeRoot = knowledge?.root || snapshot.knowledgeDirectory || '';
   state.objectives = Array.isArray(initData[2]) ? initData[2] : []; state.knowledgeDbStats = initData[3] || null; state.factoryCurricula = Array.isArray(initData[4]) ? initData[4] : [];
   state.currentChatId = state.chats[0]?.id || null;
-  els.versionLabel.textContent = `v${snapshot.appVersion || '1.6.0'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.6.0'}`;
+  els.versionLabel.textContent = `v${snapshot.appVersion || '1.6.1'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.6.1'}`;
   fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderPersistentKnowledge(); renderFactory(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
   els.objectiveAutomotiveFields.hidden = els.objectiveType.value !== 'automotive';
   await Promise.all([refreshStats(), refreshBridgeStatus()]);
