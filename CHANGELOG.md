@@ -1,5 +1,16 @@
-# Nexa AI v1.6.1
+# Nexa AI v1.7.0
 
+- Nuevo modo de respuesta con trazabilidad: Knowledge local y documentos recuperados se convierten en la base principal de las respuestas relacionadas.
+- Las fuentes recuperadas reciben identificadores `[K1]`, `[K2]`, `[D1]`, etc.; Nexa debe citar los hechos técnicos cerca de la afirmación correspondiente.
+- Para preguntas de un vehículo/año concreto, Nexa no debe rellenar especificaciones críticas desde conocimiento general si no aparecen en evidencia local compatible.
+- Si mezcla Knowledge local con conocimiento general del modelo, lo declara explícitamente al final de la respuesta.
+- La recuperación de Knowledge mejora el ranking por fabricante, modelo, año, categoría, estado de verificación y confianza.
+- Los enlaces `http://` y `https://` dentro de las respuestas y las fichas de fuente son clicables y se abren en el navegador predeterminado mediante IPC seguro.
+- Conversaciones: títulos multilínea contenidos dentro de su tarjeta, scrollbar propia cuando crece la lista, y hasta 10 conversaciones favoritas ancladas.
+- Los chats existentes se conservan. El nuevo estado `pinned/pinnedAt` es aditivo y no borra historial, Memory ni Knowledge.
+- Browser Bridge API v1 y `nexa-knowledge.db` permanecen compatibles con la extensión actual.
+
+## 1.6.1
 - Corrige Auto Knowledge Factory cuando todos los años terminaban en REVIEW durante DISCOVERY.
 - Discovery usa tres consultas web complementarias y hasta 12 fuentes únicas.
 - El parser acepta protocolo Nexa, JSON y campos de texto simples del modelo.
@@ -7,24 +18,3 @@
 - Los años antiguos en NEEDS_REVIEW sin configuraciones vuelven automáticamente a QUEUED al reanudar la fábrica.
 - Ver años muestra ahora `last_error`/motivo de discovery.
 - DISCOVERY ya no envía un año a REVIEW solo porque el modelo falló tres veces al formatear su respuesta.
-
-## 1.6.0
-- Added Auto Knowledge Factory for manufacturer/model/year-range curricula.
-- A curriculum seeds the full year queue locally (for example Toyota Corolla US 1969–2027) and advances year by year without manual objective creation.
-- Added a discovery pass that researches the exact year/market, extracts distinct technical configurations (generation, body, trims, engine, transmission, drivetrain), and creates/reuses Automotive objectives for each configuration.
-- Added persistent SQLite factory tables for curricula, years, and technical configurations. Progress survives application restarts and does not live in model weights.
-- Added coverage tracking per technical configuration and year. Nexa researches missing Automotive topics, verifies/stores results, then automatically advances to the next configuration/year.
-- Added retry and NEEDS_REVIEW behavior so one difficult vehicle does not stop the entire master list.
-- Activated the Browser Bridge API v1 command queue as a real browser worker transport for automatic web research. The extension heartbeats, polls commands, fetches research sources in Chrome, and returns evidence to Nexa for local validation/storage.
-- Added Browser Bridge extension v1.1.0 with automatic worker toggle, alarms, web_research/fetch_url/open_url command support, and persistent pairing with API v1.
-- Added the Toyota Corolla US 1969–2027 preset while keeping the factory generic for other makes/models/year ranges.
-- Preserved existing chats, Memory, Knowledge Libraries, Browser captures, Persistent Knowledge, Fast/Light modes, Unity detection, logo, custom chat scrollbar and existing API v1 capture/memory endpoints.
-
-## 1.5.0
-- Added Nexa AI Browser Bridge: a versioned HTTP API bound to `127.0.0.1:32145`.
-- Added persistent pairing-token authorization and Settings controls to copy/show/regenerate the token.
-- Added SQLite `browser_captures` and `browser_commands` tables without replacing existing knowledge/memory.
-- Chrome Browser Bridge extension can save a selection, a readable page, or lightweight memory directly to the computer.
-- Browser captures are deduplicated, source-traced and stored as `PARTIAL` knowledge by default.
-- Added a browser-command compatibility channel that 1.6.0 now uses for the automatic Browser Worker.
-- Preserved Nexa AI 1.4.0 research/applicability improvements and all existing UI/Ollama features.

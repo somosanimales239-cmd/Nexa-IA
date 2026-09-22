@@ -1,29 +1,32 @@
-NEXA AI 1.6.1 DISCOVERY REPAIR VALIDATION
+NEXA AI 1.7.0 VALIDATION REPORT
+Date: 2026-09-22
 
-npm run validate: PASS
-- renderer compatibility: PASS
-- chat scrollbar: 11/11 PASS
-- persistent knowledge DB: PASS
-- web research providers: PASS
-- research validation: 6/6 PASS
-- applicability + persistence: 22/22 PASS
-- Browser Bridge API: PASS
-- Auto Knowledge Factory: PASS
-- Chrome extension compatibility: PASS
-- delivery/project validation: PASS
-- baseline suite: 16/16 PASS
+Requested scope:
+- Better source-grounded answers from local Knowledge / document libraries.
+- Clear provenance when answers mix local data and model general knowledge.
+- Clickable HTTP/HTTPS links that open in the default web browser.
+- Conversation titles contained inside cards.
+- Up to 10 pinned favorite conversations.
+- Scrollbar for long conversation lists.
+- Preserve Browser Bridge API v1 and all existing persistent data.
 
-Targeted discovery regression checks:
-- Toyota Corolla 1969-2027 seeds 59 years: PASS
-- strict catalog protocol parser: PASS
-- flexible JSON catalog parser: PASS
-- evidence fallback creates conservative exact-year config: PASS
-- legacy discovery NEEDS_REVIEW rows reset to QUEUED: PASS
-- factory advances only after configurations complete: PASS
+Executed locally against source:
+- node --check main.js: PASS
+- node --check preload.js: PASS
+- node --check src/app.js: PASS
+- npm run validate: PASS
+- Renderer compatibility: PASS
+- Chat custom scrollbar: 11/11 PASS
+- Persistent Knowledge DB: PASS
+- Web research provider validation: PASS
+- Research validation compatibility: 6/6 PASS
+- Research applicability + persistence: 22/22 PASS
+- Browser Bridge validation: PASS
+- Auto Knowledge Factory validation: PASS
+- Chrome Browser Extension validation: PASS
+- Delivery validator: PASS
+- Project validator: PASS
+- Baseline/unit tests: 19/19 PASS
 
-Limitation: live Windows + Chrome + Ollama + Internet execution cannot be reproduced in this container.
-
-BUILD GATE REPAIR (2026-09-22)
-- Baseline test no longer hard-codes application version.
-- It validates semantic version format and, when nexa.project.json is present, requires project/package version consistency.
-- Prevents future version bumps from failing only because the test still names the previous release.
+Important limitation:
+Electron UI smoke was not executed in this container because Electron node_modules are not installed here. The repository workflow still contains its Electron UI smoke step and should execute it during the Windows GitHub build after npm dependencies are installed.

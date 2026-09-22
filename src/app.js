@@ -23,6 +23,61 @@ const state = {
 
 const $ = selector => document.querySelector(selector);
 const els = {};
+const MAX_PINNED_CHATS = 10;
+
+function safeHttpUrl(value) {
+  try {
+    const parsed = new URL(String(value || '').trim());
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    return parsed.toString();
+  } catch (_) { return ''; }
+}
+
+function renderMessageContent(value) {
+  const source = String(value ?? '');
+  let output = '';
+  let index = 0;
+  const isStop = char => !char || char === ' ' || char === '\n' || char === '\r' || char === '\t' || char === '<' || char === '>' || char === '"' || char === "'";
+  const trimUrlTail = raw => {
+    let body = raw;
+    let tail = '';
+    while (body.length && '.,;:!?'.includes(body[body.length - 1])) { tail = body[body.length - 1] + tail; body = body.slice(0, -1); }
+    return { body, tail };
+  };
+  while (index < source.length) {
+    if (source[index] === '[') {
+      const labelEnd = source.indexOf('](', index + 1);
+      if (labelEnd > index) {
+        const urlEnd = source.indexOf(')', labelEnd + 2);
+        if (urlEnd > labelEnd) {
+          const label = source.slice(index + 1, labelEnd);
+          const rawUrl = source.slice(labelEnd + 2, urlEnd);
+          const url = safeHttpUrl(rawUrl);
+          if (url) {
+            output += '<a class="message-link" href="' + escapeHtml(url) + '" data-external-url="' + escapeHtml(url) + '">' + escapeHtml(label || url) + '</a>';
+            index = urlEnd + 1;
+            continue;
+          }
+        }
+      }
+    }
+    const startsHttp = source.startsWith('https://', index) || source.startsWith('http://', index);
+    if (startsHttp) {
+      let end = index;
+      while (end < source.length && !isStop(source[end])) end += 1;
+      const parts = trimUrlTail(source.slice(index, end));
+      const url = safeHttpUrl(parts.body);
+      if (url) {
+        output += '<a class="message-link" href="' + escapeHtml(url) + '" data-external-url="' + escapeHtml(url) + '">' + escapeHtml(parts.body) + '</a>' + escapeHtml(parts.tail);
+        index = end;
+        continue;
+      }
+    }
+    output += escapeHtml(source[index]);
+    index += 1;
+  }
+  return output;
+}
 
 function uid(prefix = 'id') {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
@@ -95,7 +150,7 @@ function ensureChat() {
   if (chat) return chat;
   chat = {
     id: uid('chat'), title: 'Nuevo chat', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    libraryIds: [], objectiveIds: [], messages: [],
+    libraryIds: [], objectiveIds: [], pinned:false, pinnedAt:null, messages: [],
   };
   state.chats.unshift(chat);
   state.currentChatId = chat.id;
@@ -124,17 +179,26 @@ function autoTitle(chat) {
 
 function renderChats() {
   const query = els.chatSearch.value.trim().toLowerCase();
-  const chats = state.chats.slice().sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
-    .filter(chat => !query || chat.title.toLowerCase().includes(query) || chat.messages.some(m => String(m.content || '').toLowerCase().includes(query)));
-  if (!chats.length) {
+  const filtered = state.chats.slice().filter(chat => !query || String(chat.title || '').toLowerCase().includes(query) || chat.messages.some(m => String(m.content || '').toLowerCase().includes(query)));
+  const pinned = filtered.filter(chat => chat.pinned === true).sort((a,b) => String(b.pinnedAt || b.updatedAt).localeCompare(String(a.pinnedAt || a.updatedAt)));
+  const recent = filtered.filter(chat => chat.pinned !== true).sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  if (!filtered.length) {
     els.chatList.innerHTML = `<div class="empty-list">${query ? 'No hay coincidencias.' : 'Todavía no hay conversaciones.'}</div>`;
     return;
   }
-  els.chatList.innerHTML = chats.map(chat => `
-    <div class="chat-item ${chat.id === state.currentChatId ? 'active' : ''}" data-chat-id="${escapeHtml(chat.id)}">
-      <div><div class="chat-item-title">${escapeHtml(chat.title)}</div><div class="chat-item-time">${relativeTime(chat.updatedAt)}</div></div>
+  const row = chat => `
+    <div class="chat-item ${chat.id === state.currentChatId ? 'active' : ''} ${chat.pinned ? 'pinned' : ''}" data-chat-id="${escapeHtml(chat.id)}">
+      <button class="chat-pin ${chat.pinned ? 'active' : ''}" data-pin-chat="${escapeHtml(chat.id)}" title="${chat.pinned ? 'Desanclar conversación' : 'Anclar en favoritas'}">${chat.pinned ? '★' : '☆'}</button>
+      <div class="chat-item-main">
+        <div class="chat-item-title" title="${escapeHtml(chat.title)}">${escapeHtml(chat.title)}</div>
+        <div class="chat-item-time">${chat.pinned ? 'Favorita • ' : ''}${relativeTime(chat.updatedAt)}</div>
+      </div>
       <button class="chat-delete" data-delete-chat="${escapeHtml(chat.id)}" title="Eliminar">×</button>
-    </div>`).join('');
+    </div>`;
+  const sections = [];
+  if (pinned.length) sections.push(`<div class="chat-group-label"><span>★ Favoritas</span><span>${pinned.length}/${MAX_PINNED_CHATS}</span></div>${pinned.map(row).join('')}`);
+  if (recent.length) sections.push(`<div class="chat-group-label"><span>${pinned.length ? 'Recientes' : 'Conversaciones'}</span><span>${recent.length}</span></div>${recent.map(row).join('')}`);
+  els.chatList.innerHTML = sections.join('');
 }
 
 
@@ -220,11 +284,17 @@ function sourceChips(message) {
     var page = source.page ? ' p.' + source.page : '';
     var isWeb = Boolean(source.url || source.sourceType);
     var label = source.documentName || source.libraryName || (isWeb ? 'Fuente web' : 'Fuente');
+    var citation = source.citation ? '[' + source.citation + '] ' : '';
+    var status = source.verificationStatus ? ' · ' + source.verificationStatus : '';
+    var confidence = Number(source.confidence || 0) > 0 ? ' ' + Math.round(Number(source.confidence || 0) * 100) + '%' : '';
     var title = source.url || source.path || '';
     var cls = isWeb ? 'source-chip web-source' : 'source-chip';
-    return '<span class="' + cls + '" title="' + escapeHtml(title) + '">▣ ' + escapeHtml(label) + page + '</span>';
+    if (source.url && safeHttpUrl(source.url)) {
+      return '<button type="button" class="' + cls + ' clickable" data-external-url="' + escapeHtml(source.url) + '" title="Abrir en la web: ' + escapeHtml(title) + '">↗ ' + escapeHtml(citation + label) + page + escapeHtml(status + confidence) + '</button>';
+    }
+    return '<span class="' + cls + '" title="' + escapeHtml(title) + '">▣ ' + escapeHtml(citation + label) + page + escapeHtml(status + confidence) + '</span>';
   }).join('');
-  return '<div class="source-row">' + chips + '</div>';
+  return '<div class="source-row"><span class="source-row-label">Fuentes usadas</span>' + chips + '</div>';
 }
 
 function renderCurrentChat() {
@@ -244,7 +314,7 @@ function renderCurrentChat() {
       <div class="avatar">${message.role === 'assistant' ? 'N' : 'TÚ'}</div>
       <div>
         <div class="message-head"><span class="message-author">${message.role === 'assistant' ? 'Nexa AI' : 'Tú'}</span><span class="message-time">${formatTime(message.createdAt)}</span></div>
-        <div class="message-content">${escapeHtml(message.content)}</div>
+        <div class="message-content">${renderMessageContent(message.content)}</div>
         ${sourceChips(message)}
         <div class="message-actions">
           <button class="message-action" data-memory-message="${escapeHtml(message.id)}">Guardar en memoria</button>
@@ -264,7 +334,7 @@ function updateStreamingMessage(content) {
   if (!message) return;
   message.content += content;
   const node = els.messages.querySelector(`[data-message-id="${CSS.escape(message.id)}"] .message-content`);
-  if (node) node.textContent = message.content;
+  if (node) node.innerHTML = renderMessageContent(message.content);
   else renderCurrentChat();
   scrollMessagesToBottom();
 }
@@ -854,11 +924,26 @@ function cacheElements() {
 
 function bindEvents() {
   els.newChatBtn.addEventListener('click', () => {
-    const chat = { id:uid('chat'), title:'Nuevo chat', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), libraryIds:[], objectiveIds:[], messages:[] };
+    const chat = { id:uid('chat'), title:'Nuevo chat', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), libraryIds:[], objectiveIds:[], pinned:false, pinnedAt:null, messages:[] };
     state.chats.unshift(chat); state.currentChatId = chat.id; renderChats(); renderCurrentChat(); renderLibraries(); els.promptInput.focus();
   });
   els.chatSearch.addEventListener('input', renderChats);
   els.chatList.addEventListener('click', async event => {
+    const pinButton = event.target.closest('[data-pin-chat]');
+    if (pinButton) {
+      event.stopPropagation();
+      const chat = state.chats.find(item => item.id === pinButton.dataset.pinChat);
+      if (!chat) return;
+      if (!chat.pinned && state.chats.filter(item => item.pinned === true).length >= MAX_PINNED_CHATS) {
+        toast('Puedes anclar un máximo de 10 conversaciones favoritas.','error');
+        return;
+      }
+      chat.pinned = !chat.pinned;
+      chat.pinnedAt = chat.pinned ? new Date().toISOString() : null;
+      await persistChat(chat);
+      toast(chat.pinned ? 'Conversación anclada en favoritas.' : 'Conversación desanclada.','success');
+      return;
+    }
     const deleteButton = event.target.closest('[data-delete-chat]');
     if (deleteButton) {
       event.stopPropagation(); const chatId = deleteButton.dataset.deleteChat;
@@ -910,6 +995,17 @@ function bindEvents() {
     state.memories = state.memories.filter(memory => memory.id !== button.dataset.deleteMemory); renderMemories();
   });
   els.messages.addEventListener('click', async event => {
+    const externalLink = event.target.closest('[data-external-url]');
+    if (externalLink) {
+      event.preventDefault();
+      event.stopPropagation();
+      const url = safeHttpUrl(externalLink.dataset.externalUrl || externalLink.getAttribute('href') || '');
+      if (url) {
+        try { await window.nexa.system.openExternal(url); }
+        catch (error) { toast(error.message || String(error),'error'); }
+      }
+      return;
+    }
     const memoryButton = event.target.closest('[data-memory-message]');
     const knowledgeButton = event.target.closest('[data-knowledge-message]');
     const copyButton = event.target.closest('[data-copy-message]');
@@ -1076,7 +1172,7 @@ async function init() {
   state.libraries = knowledge?.libraries || []; state.knowledgeRoot = knowledge?.root || snapshot.knowledgeDirectory || '';
   state.objectives = Array.isArray(initData[2]) ? initData[2] : []; state.knowledgeDbStats = initData[3] || null; state.factoryCurricula = Array.isArray(initData[4]) ? initData[4] : [];
   state.currentChatId = state.chats[0]?.id || null;
-  els.versionLabel.textContent = `v${snapshot.appVersion || '1.6.1'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.6.1'}`;
+  els.versionLabel.textContent = `v${snapshot.appVersion || '1.7.0'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.7.0'}`;
   fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderPersistentKnowledge(); renderFactory(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
   els.objectiveAutomotiveFields.hidden = els.objectiveType.value !== 'automotive';
   await Promise.all([refreshStats(), refreshBridgeStatus()]);

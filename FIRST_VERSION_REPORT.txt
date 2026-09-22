@@ -1,5 +1,2 @@
-Nexa AI 1.6.1 complete source prepared from the 1.5.0 Browser Bridge baseline.
-Auto Knowledge Factory and Browser Worker are included.
-Toyota Corolla US 1969-2027 preset seeds 59 years without manual objective creation.
-Durable learning/factory state remains in the existing local SQLite knowledge database.
-Run npm run validate before Windows packaging; all validations passed in the preparation environment.
+Nexa AI 1.7.0 source prepared from the stable 1.6.1 discovery-repair baseline.
+This update adds source-grounded answers, clickable web references, pinned conversations, contained multi-line titles and a scrollable conversation list without resetting persistent data.

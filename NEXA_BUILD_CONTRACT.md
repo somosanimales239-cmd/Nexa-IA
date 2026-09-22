@@ -1,47 +1,28 @@
-# Nexa AI 1.6.1 Build Contract
+# Nexa AI 1.7.0 Build Contract
 
-Update **Nexa AI to 1.6.1** as one coherent update from the 1.5.0 Browser Bridge baseline. Preserve all existing behavior unless explicitly extended below.
+Actualizar Nexa AI desde 1.6.1 a **1.7.0** como una actualización coherente y aditiva. No borrar ni reiniciar chats, Memory, Knowledge Libraries, Browser Bridge pairing, `nexa-knowledge.db`, objetivos, evidencias ni colas existentes.
 
-## Non-negotiable persistent data
+## Grounded answers
+- Priorizar Knowledge/documentos recuperados para preguntas relacionadas.
+- Asignar IDs K/D a fuentes recuperadas y pedir citas cercanas a las afirmaciones.
+- No completar especificaciones técnicas concretas de otro año/motor/mercado desde conocimiento general del modelo.
+- PARTIAL debe conservar incertidumbre.
+- Declarar si la respuesta usó Knowledge local, mezcla con contexto general, o solo conocimiento general por falta de evidencia.
+- URLs solo pueden repetirse si aparecen realmente en las fuentes recuperadas.
 
-Do not delete, relocate, reset or replace the user's existing:
-- chats;
-- lightweight Memory;
-- Knowledge Libraries;
-- `nexa-knowledge.db` entries/objectives/sources/evidence/browser captures;
-- Browser Bridge pairing configuration.
+## Clickable web links
+- Los enlaces HTTP/HTTPS de mensajes y source chips deben abrirse en el navegador predeterminado.
+- No habilitar `nodeIntegration`; mantener `contextIsolation` y sandbox.
+- Validar el protocolo en main process antes de llamar `shell.openExternal`.
 
-SQLite migration must be additive. Factory tables are new persistent metadata and queue state.
+## Conversations
+- Títulos largos deben permanecer dentro de la tarjeta.
+- Scrollbar vertical propia para listas largas.
+- Máximo 10 conversaciones ancladas.
+- `pinned` y `pinnedAt` se guardan de forma compatible en el JSON existente.
 
-## Auto Knowledge Factory
-
-Required persistent entities:
-- curricula (make/model/year range/market/completion threshold/status);
-- years (discovery/research state, coverage, retry/error state);
-- technical configurations (generation/body/trims/engine/transmission/drivetrain/objective link/coverage/status).
-
-Required behavior:
-- seed all requested years immediately;
-- discover exact year/market configurations from evidence;
-- create/reuse Automotive objectives;
-- research one missing topic at a time using existing verification/storage rules;
-- advance automatically when the coverage threshold is reached;
-- retry failures; mark `NEEDS_REVIEW` after bounded retries; continue with subsequent work;
-- resume a previously RUNNING curriculum after restart when auto-continue is enabled.
-
-## Browser Bridge API v1 compatibility
-
-Keep existing API v1 capture/memory/auth endpoints compatible. Add/use:
-- `POST /api/v1/worker/heartbeat`;
-- `GET /api/v1/commands/next`;
-- `POST /api/v1/commands/result`.
-
-Browser worker results are evidence. Nexa remains responsible for validation and writes to SQLite.
-
-## Chrome extension v1.1.0
-
-Keep Manifest V3, local pairing token, manual Knowledge/Memory capture, and add automatic Browser Worker polling with alarms. The extension may fetch web sources needed by a queued Nexa research command, but must not become the durable memory store.
+## Compatibility
+Mantener Browser Bridge API v1 en `127.0.0.1:32145/api/v1`. No se requiere cambio de extensión para estas funciones.
 
 ## Validation
-
-`npm run validate` must pass before packaging. Keep the Windows GitHub workflow stale/missing lock recovery so package-lock drift cannot recreate the previous dependency-lock failure.
+`npm run validate` debe terminar con cero fallos antes de empaquetar.

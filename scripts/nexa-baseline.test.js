@@ -207,3 +207,32 @@ test('Auto Knowledge Factory and Browser Worker are wired without replacing pers
   assert.ok(extension.includes('/api/v1/commands/next'));
   assert.ok(extension.includes('web_research'));
 });
+
+test('v1.7 grounded responses and traceable sources are wired', () => {
+  assert.match(main, /POLÍTICA DE RESPUESTA Y TRAZABILIDAD DE NEXA AI/);
+  assert.match(main, /Base: Knowledge local/);
+  assert.match(main, /conocimiento general del modelo; no se encontró evidencia local/);
+  assert.match(main, /Cita los hechos técnicos recuperados con \[K1\]/);
+  assert.match(appJs, /source-row-label/);
+  assert.match(appJs, /verificationStatus/);
+});
+
+test('v1.7 external links open through safe Electron IPC', () => {
+  assert.match(main, /safeExternalHttpUrl/);
+  assert.match(main, /system:open-external/);
+  assert.match(preload, /openExternal/);
+  assert.match(appJs, /data-external-url/);
+  assert.match(appJs, /renderMessageContent/);
+  assert.match(appJs, /window\.nexa\.system\.openExternal/);
+});
+
+test('v1.7 conversation favorites, contained titles and scrolling are present', () => {
+  const css = read('src/app.css');
+  assert.match(main, /pinnedAt/);
+  assert.match(appJs, /MAX_PINNED_CHATS\s*=\s*10/);
+  assert.match(appJs, /data-pin-chat/);
+  assert.match(appJs, /Favoritas/);
+  assert.match(css, /\.chat-list\s*\{[^}]*overflow-y:auto/s);
+  assert.match(css, /\.chat-item-title\s*\{[^}]*-webkit-line-clamp:3/s);
+  assert.match(css, /overflow-wrap:anywhere/);
+});

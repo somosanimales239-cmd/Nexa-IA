@@ -1,4 +1,4 @@
-# Nexa AI 1.6.1 — Persistent Knowledge Architecture
+# Nexa AI 1.7.0 — Persistent Knowledge Architecture
 
 ## Separation of model and learned knowledge
 

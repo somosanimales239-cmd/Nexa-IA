@@ -1,89 +1,44 @@
-# Nexa AI v1.6.1
+# Nexa AI v1.7.0
 
-Nexa AI is a Windows Electron application for a local Ollama model with persistent chats, lightweight user memory, document Knowledge Libraries, structured SQLite knowledge, controlled Internet research, a Chrome Browser Bridge, and an Auto Knowledge Factory.
+Nexa AI es la aplicación local de Windows que usa Ollama junto con chats persistentes, Memory, Knowledge Libraries, Knowledge estructurado en SQLite y Browser Bridge. Esta versión se concentra en **respuestas mejor fundamentadas y trazables** sin romper la memoria acumulada.
 
-## What Auto Knowledge Factory does
+## Respuestas basadas en Knowledge local
 
-Create one curriculum such as:
+Cuando una pregunta coincide con información existente en `nexa-knowledge.db`, Nexa recupera primero esos registros y los entrega al modelo con identificadores como `[K1]`, `[K2]`. Los documentos importados usan `[D1]`, `[D2]`.
 
-`Toyota / Corolla / 1969–2027 / US / 85% coverage`
+Reglas principales:
+- Knowledge local compatible con vehículo/año/tema tiene prioridad sobre conocimiento general del modelo.
+- Una entrada `PARTIAL` puede usarse, pero debe presentarse como parcial y no como confirmación OEM.
+- Para datos críticos de un vehículo concreto (motor, transmisión, cantidades, torque, fluidos, pinouts, DTC aplicables, ubicaciones exactas o procedimientos) el modelo no debe completar huecos desde memoria general si no existe evidencia local compatible.
+- Si el modelo aporta una explicación universal adicional, debe diferenciarla como contexto general.
+- Al final de la respuesta, Nexa identifica si la base fue `Knowledge local`, `Knowledge local + contexto general del modelo`, o solo conocimiento general porque no se recuperó evidencia local.
 
-Nexa creates the entire year queue locally. For each year it performs a discovery pass, uses available web evidence to identify the exact technical configurations sold for that make/model/year/market, creates or reuses Automotive objectives, researches missing technical topics, verifies/stores the knowledge in SQLite, and then advances automatically.
+Las fuentes utilizadas aparecen debajo de la respuesta. Las fuentes web con URL se pueden abrir directamente.
 
-The factory state is persistent. Closing Nexa does not erase the curriculum or learned knowledge. A difficult configuration is retried and can be marked `NEEDS_REVIEW` so the rest of the master list can continue.
+## Enlaces web
 
-## Factory flow
+Las URLs `http://` y `https://` escritas por Nexa y los chips de fuentes web son clicables. Se abren en el navegador predeterminado usando un canal IPC que únicamente permite protocolos HTTP/HTTPS.
 
-`CATALOG -> DISCOVER YEAR -> TECHNICAL CONFIGS -> OBJECTIVES -> RESEARCH -> VERIFY -> STORE -> COVERAGE CHECK -> NEXT CONFIG/YEAR`
+## Conversaciones
 
-A technical configuration is separated by fields such as generation, body style, engine, transmission and drivetrain. Trims that share the same mechanical configuration can be grouped together.
+- Los títulos largos permanecen dentro de la tarjeta, hasta tres líneas, sin salirse del panel.
+- La lista de conversaciones tiene scrollbar vertical propia.
+- Puedes anclar hasta **10 conversaciones favoritas** con la estrella.
+- Favoritas y conversaciones recientes se muestran en grupos separados.
+- El pin se guarda en `nexa-data.json` y sobrevive al reinicio.
 
-The included preset creates **Toyota Corolla / US / 1969–2027**. The form is generic, so the same system can later create Honda Civic, Toyota Camry, Ford F-150, etc.
+## Datos persistentes
 
-## Core local architecture
+- `D:\LocalAI\NexaAI\Data\nexa-data.json` — chats, favoritos, ajustes y Memory ligera.
+- `D:\LocalAI\NexaAI\Data\nexa-knowledge.db` — Knowledge estructurado, fuentes, Browser Bridge y evidencia investigada.
+- `D:\LocalAI\NexaAI\Data\nexa-browser-bridge.json` — pairing de Browser Bridge.
+- `D:\LocalAI\NexaAI\Knowledge\` — libros/manuales importados.
+- `D:\LocalAI\Models\` — modelos de Ollama.
 
-- Ollama endpoint defaults to `http://127.0.0.1:11434`.
-- Default model: `gpt-oss:20b`.
-- Fast/Light GPU profiles remain available.
-- Chats and lightweight user memories remain in the local Data area.
-- Imported books/manuals remain in the local Knowledge area.
-- Structured learned knowledge is stored in `Data/nexa-knowledge.db` (SQLite), outside model weights.
-- Factory curricula/queues/progress are also stored in the same persistent SQLite database.
-- The same knowledge can be reused by a future 120B or another local model.
+## Compatibilidad
 
-## Browser Extension Bridge v1.1.0
-
-Nexa AI exposes API v1 at:
-
-`http://127.0.0.1:32145/api/v1`
-
-The Chrome extension remains a transport layer, not the memory database. Manual page/selection capture still works. In 1.6.1 the extension can additionally run as a Browser Worker: it heartbeats to Nexa, polls the local command queue, performs bounded web research/fetches in Chrome, and returns source evidence to Nexa. Nexa performs the validation and persistent storage on the computer.
-
-If the extension worker is online, Auto Knowledge Factory prefers it for web research. If it is unavailable, the existing direct web-research fallback remains available.
-
-The API server listens on loopback only and data endpoints require the local pairing token.
-
-## Persistent Knowledge
-
-The Knowledge panel supports:
-- Automotive and General/Science objectives.
-- Automatic Automotive baseline topics.
-- `VERIFIED`, `PARTIAL`, `MISSING`, `CONFLICTING`, `OUTDATED`, `NOT VERIFIED`.
-- Manual research by topic and bounded “Completar faltantes”.
-- Source ranking and local-model validation.
-- Source traceability and preserved versions.
-- “Guardar en conocimiento” from chat messages.
-- Browser-captured knowledge from the Chrome extension.
-- Auto Knowledge Factory curricula and progress.
-
-## Preferred Windows data locations
-
-- `D:\LocalAI\NexaAI\Data\nexa-data.json` — chats, settings and lightweight memory.
-- `D:\LocalAI\NexaAI\Data\nexa-knowledge.db` — objectives, structured knowledge, sources, web evidence, browser captures and factory queues/progress.
-- `D:\LocalAI\NexaAI\Data\nexa-browser-bridge.json` — local Browser Bridge pairing configuration.
-- `D:\LocalAI\NexaAI\Knowledge\` — imported books/manuals and indexes.
-- `D:\LocalAI\Models\` — Ollama model files.
-
-## Important semantics
-
-Adding information to Knowledge is persistent retrieval knowledge, not model-weight fine-tuning. This is intentional: a different local model can immediately use the same external memory.
-
-Factory discovery never treats a web page as automatically `VERIFIED`. Source evidence is passed to the local model for structured extraction/validation and the existing research rules determine `PARTIAL` versus `VERIFIED`.
-
-## Chrome extension
-
-Source folder: `browser-extension/`
-
-Standalone distribution: `Nexa-AI-Browser-Bridge-Chrome-v1.1.0.zip`
-
-Install it through `chrome://extensions` -> Developer mode -> Load unpacked, pair it with the token shown in Nexa Settings, and leave **Browser Worker** enabled for automatic Factory research.
+Browser Bridge API sigue en `http://127.0.0.1:32145/api/v1`. Esta actualización no borra ni reinicia Knowledge y continúa siendo compatible con la extensión Browser Bridge actual.
 
 ## Build
 
-The repository keeps `.github/workflows/nexa-windows-build.yml` for the Nexa App Builder Windows build and the branded application icon at `assets/icon.ico`.
-
-Run `npm run validate` before packaging.
-
-
-## v1.6.1 Discovery Repair
-Si una lista v1.6.0 dejó años en NEEDS_REVIEW con 0 configuraciones, no la borres. Al pulsar Iniciar/continuar en v1.6.1 esos años se reencolan automáticamente y se procesan con el discovery robusto.
+Ejecutar `npm run validate` antes de empaquetar. La versión de aplicación es `1.7.0`.

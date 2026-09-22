@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('nexa', {
     stats: () => ipcRenderer.invoke('system:stats'),
     openDataFolder: () => ipcRenderer.invoke('system:open-data'),
     openKnowledgeFolder: () => ipcRenderer.invoke('system:open-knowledge'),
+    openExternal: url => ipcRenderer.invoke('system:open-external', url),
   }),
   chat: Object.freeze({
     start: payload => ipcRenderer.invoke('chat:start', payload),
