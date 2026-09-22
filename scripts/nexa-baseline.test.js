@@ -14,7 +14,13 @@ const html = read('src/index.html');
 
 test('Nexa AI package and Electron entry graph are valid', () => {
   assert.equal(packageJson.build.productName, 'Nexa AI');
-  assert.equal(packageJson.version, '1.6.0');
+  assert.match(packageJson.version, /^\d+\.\d+\.\d+(?:[+-][0-9A-Za-z.-]+)?$/);
+  const projectPath = path.join(root, 'nexa.project.json');
+  if (fs.existsSync(projectPath)) {
+    const project = JSON.parse(fs.readFileSync(projectPath, 'utf8'));
+    const projectVersion = String(project.application_version || project.version || '');
+    assert.equal(projectVersion, packageJson.version);
+  }
   assert.ok(fs.existsSync(path.join(root, packageJson.main)));
   for (const file of ['preload.js','src/index.html','src/app.js','src/app.css']) assert.ok(fs.existsSync(path.join(root, file)), file);
 });

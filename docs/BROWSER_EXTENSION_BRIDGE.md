@@ -1,4 +1,4 @@
-# Nexa AI 1.6.0 — Browser Extension Bridge
+# Nexa AI 1.6.1 — Browser Extension Bridge
 
 ## Goal
 

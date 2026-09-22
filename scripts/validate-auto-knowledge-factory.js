@@ -3,7 +3,7 @@ const fs=require('fs');
 const os=require('os');
 const path=require('path');
 const { PersistentKnowledgeDB, AUTOMOTIVE_BASE_TOPICS }=require('../lib/persistent-knowledge');
-const { parseVehicleCatalog }=require('../lib/vehicle-catalog');
+const { parseVehicleCatalog, parseFlexibleVehicleCatalog, fallbackCatalogFromEvidence }=require('../lib/vehicle-catalog');
 function assert(v,m){ if(!v) throw new Error(m); }
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'nexa-factory-'));
 const db=new PersistentKnowledgeDB(root);
@@ -18,6 +18,12 @@ try {
   assert(work?.type==='DISCOVER_YEAR' && work.year.year===2000,'first work must discover year 2000');
   const parsed=parseVehicleCatalog(`NEXA_VEHICLE_CATALOG_V1\nMAKE: Toyota\nMODEL: Corolla\nYEAR: 2000\nMARKET: US\nVARIANT\nGENERATION: E110\nBODY: Sedan\nTRIMS: VE, CE\nENGINE_CODE: 1ZZ-FE\nENGINE_DISPLACEMENT: 1.8L\nFUEL: Gasoline\nTRANSMISSION: 5-speed manual\nDRIVETRAIN: FWD\nCONFIDENCE: 0.90\nSOURCE_INDEXES: 1,2\nEND_VARIANT\nVARIANT\nGENERATION: E110\nBODY: Sedan\nTRIMS: LE\nENGINE_CODE: 1ZZ-FE\nENGINE_DISPLACEMENT: 1.8L\nFUEL: Gasoline\nTRANSMISSION: 4-speed automatic\nDRIVETRAIN: FWD\nCONFIDENCE: 0.88\nSOURCE_INDEXES: 1,3\nEND_VARIANT\nEND_NEXA_VEHICLE_CATALOG`,{ make:'Toyota',model:'Corolla',year:2000,market:'US' });
   assert(parsed?.variants?.length===2,'catalog parser did not produce two variants');
+
+  const jsonParsed=parseFlexibleVehicleCatalog(JSON.stringify({variants:[{make:'Toyota',model:'Corolla',year:2000,market:'US',generation:'E110',engine_code:'1ZZ-FE',engine_displacement:'1.8L',transmission:'4-speed automatic',drivetrain:'FWD',confidence:0.82,source_indexes:[1,2]}]}),{make:'Toyota',model:'Corolla',year:2000,market:'US'});
+  assert(jsonParsed?.variants?.length===1 && jsonParsed.variants[0].engine_code==='1ZZ-FE','flexible JSON catalog parser failed');
+  const fallback=fallbackCatalogFromEvidence([{title:'2000 Toyota Corolla specifications',url:'https://example.com/a',text:'The 2000 Toyota Corolla for the US market used a 1.8L engine with a 4-speed automatic transmission and FWD.'}],{make:'Toyota',model:'Corolla',year:2000,market:'US'});
+  assert(fallback?.variants?.length>=1,'evidence fallback did not create a conservative variant');
+  assert(fallback.variants[0].engine_displacement==='1.8L','evidence fallback did not preserve displacement');
   const source=[{ title:'Toyota source',url:'https://example.com/toyota',sourceType:'OEM' }];
   for(const variant of parsed.variants) db.upsertFactoryConfig(curriculum.id,work.year.id,variant,source);
   db.setFactoryYearState(work.year.id,{ discovery_status:'COMPLETE',research_status:'RESEARCHING',variant_count:2,total_configs:2 });
@@ -37,6 +43,10 @@ try {
   assert(year.research_status==='COMPLETE','year must complete after all configs complete');
   work=db.nextFactoryWork(curriculum.id);
   assert(work?.type==='DISCOVER_YEAR' && work.year.year===2001,'factory did not advance to next year');
+  db.setFactoryYearState(work.year.id,{discovery_status:'NEEDS_REVIEW',research_status:'NEEDS_REVIEW',attempts:3,last_error:'legacy strict parser'});
+  db.resetFactoryDiscoveryReviews(curriculum.id);
+  const retried=db.getFactoryYear(work.year.id);
+  assert(retried.discovery_status==='QUEUED' && retried.attempts===0,'legacy discovery REVIEW years were not reset safely');
   const stats=db.factoryStats();
   assert(stats.curricula===1 && stats.years===3 && stats.configs===2,'factory stats mismatch');
   console.log('Auto Knowledge Factory validation: PASS');

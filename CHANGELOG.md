@@ -1,3 +1,13 @@
+# Nexa AI v1.6.1
+
+- Corrige Auto Knowledge Factory cuando todos los años terminaban en REVIEW durante DISCOVERY.
+- Discovery usa tres consultas web complementarias y hasta 12 fuentes únicas.
+- El parser acepta protocolo Nexa, JSON y campos de texto simples del modelo.
+- Si el modelo no estructura la salida pero las fuentes coinciden exactamente con make/model/year, crea una configuración conservadora PARTIAL desde evidencia en lugar de descartar el año.
+- Los años antiguos en NEEDS_REVIEW sin configuraciones vuelven automáticamente a QUEUED al reanudar la fábrica.
+- Ver años muestra ahora `last_error`/motivo de discovery.
+- DISCOVERY ya no envía un año a REVIEW solo porque el modelo falló tres veces al formatear su respuesta.
+
 ## 1.6.0
 - Added Auto Knowledge Factory for manufacturer/model/year-range curricula.
 - A curriculum seeds the full year queue locally (for example Toyota Corolla US 1969–2027) and advances year by year without manual objective creation.

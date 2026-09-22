@@ -1,4 +1,4 @@
-# NEXA AI 1.6.0 — ONE-SHOT APP BUILDER PROMPT
+# NEXA AI 1.6.1 — ONE-SHOT APP BUILDER PROMPT
 
 Repository: `somosanimales239-cmd/Nexa-IA`
 
@@ -45,4 +45,4 @@ Preserve chats, Memory, Knowledge Libraries, persistent objectives, prior Intern
 
 Run `npm run validate`. It must include Auto Knowledge Factory, Browser Bridge worker, Chrome extension, research/applicability, persistent knowledge, renderer, scrollbar, delivery/project and baseline tests.
 
-Application version: `1.6.0`.
+Application version: `1.6.1`.

@@ -1,4 +1,4 @@
-Nexa AI 1.6.0 complete source prepared from the 1.5.0 Browser Bridge baseline.
+Nexa AI 1.6.1 complete source prepared from the 1.5.0 Browser Bridge baseline.
 Auto Knowledge Factory and Browser Worker are included.
 Toyota Corolla US 1969-2027 preset seeds 59 years without manual objective creation.
 Durable learning/factory state remains in the existing local SQLite knowledge database.

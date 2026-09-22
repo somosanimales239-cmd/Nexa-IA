@@ -22,3 +22,8 @@ Targeted discovery regression checks:
 - factory advances only after configurations complete: PASS
 
 Limitation: live Windows + Chrome + Ollama + Internet execution cannot be reproduced in this container.
+
+BUILD GATE REPAIR (2026-09-22)
+- Baseline test no longer hard-codes application version.
+- It validates semantic version format and, when nexa.project.json is present, requires project/package version consistency.
+- Prevents future version bumps from failing only because the test still names the previous release.

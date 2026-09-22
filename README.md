@@ -1,4 +1,4 @@
-# Nexa AI v1.6.0
+# Nexa AI v1.6.1
 
 Nexa AI is a Windows Electron application for a local Ollama model with persistent chats, lightweight user memory, document Knowledge Libraries, structured SQLite knowledge, controlled Internet research, a Chrome Browser Bridge, and an Auto Knowledge Factory.
 
@@ -37,7 +37,7 @@ Nexa AI exposes API v1 at:
 
 `http://127.0.0.1:32145/api/v1`
 
-The Chrome extension remains a transport layer, not the memory database. Manual page/selection capture still works. In 1.6.0 the extension can additionally run as a Browser Worker: it heartbeats to Nexa, polls the local command queue, performs bounded web research/fetches in Chrome, and returns source evidence to Nexa. Nexa performs the validation and persistent storage on the computer.
+The Chrome extension remains a transport layer, not the memory database. Manual page/selection capture still works. In 1.6.1 the extension can additionally run as a Browser Worker: it heartbeats to Nexa, polls the local command queue, performs bounded web research/fetches in Chrome, and returns source evidence to Nexa. Nexa performs the validation and persistent storage on the computer.
 
 If the extension worker is online, Auto Knowledge Factory prefers it for web research. If it is unavailable, the existing direct web-research fallback remains available.
 
@@ -83,3 +83,7 @@ Install it through `chrome://extensions` -> Developer mode -> Load unpacked, pai
 The repository keeps `.github/workflows/nexa-windows-build.yml` for the Nexa App Builder Windows build and the branded application icon at `assets/icon.ico`.
 
 Run `npm run validate` before packaging.
+
+
+## v1.6.1 Discovery Repair
+Si una lista v1.6.0 dejó años en NEEDS_REVIEW con 0 configuraciones, no la borres. Al pulsar Iniciar/continuar en v1.6.1 esos años se reencolan automáticamente y se procesan con el discovery robusto.

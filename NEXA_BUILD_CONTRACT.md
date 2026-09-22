@@ -1,6 +1,6 @@
-# Nexa AI 1.6.0 Build Contract
+# Nexa AI 1.6.1 Build Contract
 
-Update **Nexa AI to 1.6.0** as one coherent update from the 1.5.0 Browser Bridge baseline. Preserve all existing behavior unless explicitly extended below.
+Update **Nexa AI to 1.6.1** as one coherent update from the 1.5.0 Browser Bridge baseline. Preserve all existing behavior unless explicitly extended below.
 
 ## Non-negotiable persistent data
 
