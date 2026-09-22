@@ -14,7 +14,7 @@
         <div class="brand-mark brand-logo-shell"><img class="brand-logo" src="../assets/logo-128.png" alt="Nexa AI" /></div>
         <div>
           <div class="brand-name">Nexa AI</div>
-          <div class="brand-sub">Local Intelligence <span id="brandVersion" class="brand-version">v1.5.0</span></div>
+          <div class="brand-sub">Local Intelligence <span id="brandVersion" class="brand-version">v1.6.0</span></div>
         </div>
       </div>
 
@@ -150,6 +150,21 @@
           <small id="knowledgeDbPath">Cargando ruta…</small>
         </div>
 
+        <div class="section-label">Auto Knowledge Factory</div>
+        <div class="panel-intro factory-intro">Crea una lista maestra por fabricante/modelo/años. Nexa descubre variantes técnicas por año, crea objetivos, investiga sus faltantes y continúa automáticamente con el siguiente vehículo. Cuando la extensión está activa, el Browser Bridge es el transporte web preferido.</div>
+        <form id="factoryForm" class="factory-form">
+          <div class="settings-grid"><input id="factoryMake" placeholder="Fabricante: Toyota" /><input id="factoryModel" placeholder="Modelo: Corolla" /></div>
+          <div class="settings-grid"><input id="factoryStartYear" type="number" min="1886" max="2100" placeholder="Desde: 1969" /><input id="factoryEndYear" type="number" min="1886" max="2100" placeholder="Hasta: 2027" /></div>
+          <div class="settings-grid"><input id="factoryMarket" placeholder="Mercado: US" value="US" /><input id="factoryThreshold" type="number" min="50" max="100" value="85" placeholder="Cobertura %" /></div>
+          <button class="primary full" type="submit">+ Crear lista maestra automática</button>
+          <button id="factoryToyotaCorollaPreset" class="secondary full" type="button">Toyota Corolla US 1969–2027</button>
+        </form>
+        <div id="factoryProgress" class="research-progress" hidden>
+          <div class="progress-top"><span id="factoryProgressText">Fábrica en espera…</span><span id="factoryProgressState">PAUSED</span></div>
+          <div class="research-flow">CATALOG → DISCOVER → OBJECTIVES → RESEARCH → VERIFY → STORE → NEXT VEHICLE</div>
+        </div>
+        <div id="factoryList" class="factory-list"></div>
+
         <div class="section-label">Objetivos de aprendizaje</div>
         <form id="objectiveForm" class="objective-form">
           <select id="objectiveType">
@@ -239,7 +254,7 @@
           </div>
           <div id="bridgeLastError" class="bridge-error" hidden></div>
         </div>
-        <div class="version-line">Nexa AI <span id="versionLabel">v1.5.0</span></div>
+        <div class="version-line">Nexa AI <span id="versionLabel">v1.6.0</span></div>
       </section>
     </aside>
   </div>

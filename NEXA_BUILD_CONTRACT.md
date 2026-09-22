@@ -1,60 +1,47 @@
-# NEXA-04 — Browser Bridge + Durable Local Learning API
+# Nexa AI 1.6.0 Build Contract
 
-Update **Nexa AI to 1.5.0** as one coherent update. Preserve every working feature from 1.4.0.
+Update **Nexa AI to 1.6.0** as one coherent update from the 1.5.0 Browser Bridge baseline. Preserve all existing behavior unless explicitly extended below.
 
-## Architectural rule
+## Non-negotiable persistent data
 
-The Chrome extension is a transport/client. Durable learning stays on the computer.
+Do not delete, relocate, reset or replace the user's existing:
+- chats;
+- lightweight Memory;
+- Knowledge Libraries;
+- `nexa-knowledge.db` entries/objectives/sources/evidence/browser captures;
+- Browser Bridge pairing configuration.
 
-```text
-Chrome extension → local API v1 → Nexa desktop → nexa-knowledge.db
-```
+SQLite migration must be additive. Factory tables are new persistent metadata and queue state.
 
-Do not make Chrome extension storage the source of truth.
+## Auto Knowledge Factory
 
-## Stable API boundary
+Required persistent entities:
+- curricula (make/model/year range/market/completion threshold/status);
+- years (discovery/research state, coverage, retry/error state);
+- technical configurations (generation/body/trims/engine/transmission/drivetrain/objective link/coverage/status).
 
-Nexa desktop must expose `http://127.0.0.1:32145/api/v1` and bind only to loopback.
+Required behavior:
+- seed all requested years immediately;
+- discover exact year/market configurations from evidence;
+- create/reuse Automotive objectives;
+- research one missing topic at a time using existing verification/storage rules;
+- advance automatically when the coverage threshold is reached;
+- retry failures; mark `NEEDS_REVIEW` after bounded retries; continue with subsequent work;
+- resume a previously RUNNING curriculum after restart when auto-continue is enabled.
 
-All data endpoints require a locally generated pairing token. Settings must show API status, API URL, a masked token, copy/show controls and token regeneration.
+## Browser Bridge API v1 compatibility
 
-Required endpoints:
-- health;
-- token verification;
-- objectives;
-- page/selection capture;
-- recent captures;
-- lightweight memory save;
-- future browser command poll/result channel.
+Keep existing API v1 capture/memory/auth endpoints compatible. Add/use:
+- `POST /api/v1/worker/heartbeat`;
+- `GET /api/v1/commands/next`;
+- `POST /api/v1/commands/result`.
 
-The API v1 capture contract should remain backward compatible so future extension improvements do not require rebuilding the desktop app for routine browser-side changes.
+Browser worker results are evidence. Nexa remains responsible for validation and writes to SQLite.
 
-## Browser capture persistence
+## Chrome extension v1.1.0
 
-Schema must persist captures in SQLite, including URL, title, capture type, page text/selection, metadata, source, hash, status, confidence and associated knowledge entry.
-
-Duplicate page/selection captures are detected by content hash.
-
-Captured browser knowledge defaults to `PARTIAL` with source traceability. Never mark arbitrary page content `VERIFIED` merely because it was captured.
-
-## Chrome extension
-
-Manifest V3 extension must support:
-- pair with local Nexa using token;
-- list persistent objectives;
-- save current selection to Knowledge;
-- save readable current page to Knowledge;
-- save selected text to lightweight Memory;
-- context-menu actions for page/selection capture;
-- standalone options page;
-- Nexa branding.
-
-Do not automatically record every page the user visits.
-
-## Preserve
-
-Preserve local Ollama chat, persistent chats, Memory, Knowledge Libraries, structured objectives, research engine, Fast/Light modes, Unity detection, monitors, custom chat scrollbar, `Ir al final`, logo and Windows packaging.
+Keep Manifest V3, local pairing token, manual Knowledge/Memory capture, and add automatic Browser Worker polling with alarms. The extension may fetch web sources needed by a queued Nexa research command, but must not become the durable memory store.
 
 ## Validation
 
-`npm run validate` must include Browser Bridge API integration tests in addition to every existing validation.
+`npm run validate` must pass before packaging. Keep the Windows GitHub workflow stale/missing lock recovery so package-lock drift cannot recreate the previous dependency-lock failure.

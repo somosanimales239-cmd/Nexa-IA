@@ -14,7 +14,7 @@ const html = read('src/index.html');
 
 test('Nexa AI package and Electron entry graph are valid', () => {
   assert.equal(packageJson.build.productName, 'Nexa AI');
-  assert.equal(packageJson.version, '1.5.0');
+  assert.equal(packageJson.version, '1.6.0');
   assert.ok(fs.existsSync(path.join(root, packageJson.main)));
   for (const file of ['preload.js','src/index.html','src/app.js','src/app.css']) assert.ok(fs.existsSync(path.join(root, file)), file);
 });
@@ -183,4 +183,21 @@ test('Chrome Browser Bridge uses a versioned loopback API and persistent storage
   assert.ok(manifest.host_permissions.includes('http://127.0.0.1:32145/*'));
   assert.match(preload, /bridge:/);
   assert.match(html, /Browser Extension Bridge/);
+});
+
+
+test('Auto Knowledge Factory and Browser Worker are wired without replacing persistent knowledge', () => {
+  const main = read('main.js');
+  const preload = read('preload.js');
+  const persistent = read('lib/persistent-knowledge.js');
+  const bridge = read('lib/browser-bridge.js');
+  const extension = read('browser-extension/background.js');
+  assert.ok(main.includes('runFactoryLoop'));
+  assert.ok(main.includes('discoverFactoryYear'));
+  assert.ok(preload.includes('factory:'));
+  assert.ok(persistent.includes('knowledge_factory_curricula'));
+  assert.ok(persistent.includes('knowledge_factory_configs'));
+  assert.ok(bridge.includes('/api/v1/worker/heartbeat'));
+  assert.ok(extension.includes('/api/v1/commands/next'));
+  assert.ok(extension.includes('web_research'));
 });

@@ -31,6 +31,11 @@ function assert(value, message) { if (!value) throw new Error(message); }
     response = await fetch(base + '/api/v1/auth/check', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer wrong' }, body:'{}' });
     assert(response.status === 401, 'bad token was not rejected');
 
+    response = await fetch(base + '/api/v1/worker/heartbeat', { method:'POST', headers, body:'{}' });
+    body = await response.json();
+    assert(response.ok && body.ok, 'worker heartbeat failed');
+    assert(bridge.status().extensionWorkerOnline === true, 'extension worker online state failed');
+
     response = await fetch(base + '/api/v1/objectives', { headers });
     body = await response.json();
     assert(response.ok && body.objectives.some(x => x.id === objective.id), 'objective listing failed');

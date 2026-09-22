@@ -76,6 +76,17 @@ contextBridge.exposeInMainWorld('nexa', {
     missing: (objectiveId, limit) => ipcRenderer.invoke('research:missing', objectiveId, limit),
     onProgress: callback => on('research:progress', callback),
   }),
+  factory: Object.freeze({
+    list: () => ipcRenderer.invoke('factory:list'),
+    create: input => ipcRenderer.invoke('factory:create', input),
+    delete: curriculumId => ipcRenderer.invoke('factory:delete', curriculumId),
+    years: curriculumId => ipcRenderer.invoke('factory:years', curriculumId),
+    configs: (curriculumId, year) => ipcRenderer.invoke('factory:configs', curriculumId, year),
+    start: curriculumId => ipcRenderer.invoke('factory:start', curriculumId),
+    pause: curriculumId => ipcRenderer.invoke('factory:pause', curriculumId),
+    stats: () => ipcRenderer.invoke('factory:stats'),
+    onProgress: callback => on('factory:progress', callback),
+  }),
   bridge: Object.freeze({
     status: () => ipcRenderer.invoke('bridge:status'),
     regenerateToken: () => ipcRenderer.invoke('bridge:regenerate-token'),

@@ -1,11 +1,11 @@
-# Nexa AI 1.5.0 — Browser Extension Bridge
+# Nexa AI 1.6.0 — Browser Extension Bridge
 
 ## Goal
 
 The Chrome extension is a transport layer between the browser and the durable local Nexa knowledge database. The browser extension is **not** the primary memory store.
 
 ```text
-Chrome page / selection
+Chrome page / selection / Browser Worker
         ↓
 Nexa AI Browser Bridge extension
         ↓
@@ -32,40 +32,54 @@ Endpoints:
 
 - `GET /api/v1/health` — local bridge availability.
 - `POST /api/v1/auth/check` — validate pairing token.
+- `POST /api/v1/worker/heartbeat` — extension worker presence.
 - `GET /api/v1/objectives` — persistent objective list.
 - `POST /api/v1/captures` — persist a page or selection and create PARTIAL knowledge.
 - `GET /api/v1/captures` — recent browser captures.
 - `POST /api/v1/memory` — save selected text to lightweight Nexa Memory.
-- `GET /api/v1/commands/next` — reserved command channel for future direct browser navigation.
-- `POST /api/v1/commands/result` — reserved browser command result channel.
+- `GET /api/v1/commands/next` — claim the next queued browser command.
+- `POST /api/v1/commands/result` — return browser command results/evidence.
+
+## Browser Worker v1.1.0
+
+When enabled, the extension wakes on a Chrome alarm, heartbeats to Nexa and checks the local command queue. Supported command types are:
+
+- `web_research` — search the web and return a bounded set of source URLs/text.
+- `fetch_url` — fetch readable text for one explicit HTTP/HTTPS URL.
+- `open_url` — open one explicit HTTP/HTTPS URL in Chrome.
+
+Auto Knowledge Factory uses `web_research` as its preferred Internet transport when the extension worker is online. Nexa receives the returned evidence, performs local applicability/verification, and writes the resulting knowledge to SQLite.
 
 ## Security boundary
 
 - Server binds to `127.0.0.1` only.
-- Write/read data endpoints require the pairing token.
+- Data/command endpoints require the pairing token.
 - Token can be regenerated from Nexa AI Settings.
 - Browser-captured knowledge defaults to `PARTIAL`, never automatically `VERIFIED`.
 - Web page content is evidence, not system instructions.
+- The extension does not own the durable knowledge database.
 
 ## Durable database
 
-Schema 3 adds:
+Relevant tables include:
 
-- `browser_captures` — exact browser ingestion history with URL, title, text, selection, metadata, hash and associated knowledge entry.
-- `browser_commands` — future versioned browser-control command queue.
+- `browser_captures` — browser ingestion history with URL, title, text, metadata, hash and associated knowledge entry.
+- `browser_commands` — persistent browser-worker command/result queue.
+- `knowledge_factory_curricula`, `knowledge_factory_years`, `knowledge_factory_configs` — Auto Knowledge Factory state.
 
-A browser capture is deduplicated by SHA-256. The raw captured text is retained locally and the same capture also creates a searchable persistent knowledge entry when `saveToKnowledge=true`.
+Manual browser captures are deduplicated by SHA-256. Factory research evidence is returned to Nexa and then handled by the existing research/knowledge persistence layer.
 
 ## Extension installation
 
-1. Unzip `Nexa-AI-Browser-Bridge-Chrome-v1.0.0.zip` to a permanent folder.
+1. Unzip `Nexa-AI-Browser-Bridge-Chrome-v1.1.0.zip` to a permanent folder.
 2. Open `chrome://extensions`.
 3. Enable Developer mode.
 4. Select **Load unpacked** and choose the extension folder.
-5. Open Nexa AI → Settings → Browser Extension Bridge.
+5. Open Nexa AI -> Settings -> Browser Extension Bridge.
 6. Copy the pairing token.
-7. Open the extension options, paste the token and verify.
+7. Open the extension options, paste the token, keep **Browser Worker** enabled, and press **Guardar y verificar**.
+8. Nexa Settings should change from `API ONLINE` to `EXT ONLINE` after the extension heartbeat arrives.
 
-## Future browser navigation
+## Compatibility rule
 
-The desktop API already reserves a command queue so direct browser navigation can be added later by updating the extension protocol rather than rebuilding the knowledge database. Existing API v1 capture endpoints should remain backward compatible.
+API v1 capture/memory/auth endpoints remain compatible. Browser-side improvements can continue in the extension as long as they use the existing API v1 contract. A future capability that requires a genuinely new desktop-side operation may still require a Nexa desktop update.

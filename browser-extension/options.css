@@ -9,3 +9,7 @@ input { width:100%; padding:12px; border:1px solid #23334e; border-radius:10px; 
 button { padding:11px; border:1px solid #283a57; border-radius:10px; background:#101b2d; color:#dce8fa; cursor:pointer; font-weight:800; }.primary { background:#93fa30; color:#081006; border-color:#93fa30; }
 .status { margin-top:16px; padding:11px; border:1px solid #253651; border-radius:10px; color:#91a5c1; }.status.ok { color:#b8ff72; border-color:rgba(168,255,62,.25); }.status.error { color:#ff929d; border-color:rgba(255,95,109,.25); }
 section { margin-top:24px; border-top:1px solid #1c2a40; padding-top:17px; color:#8192aa; font-size:12px; line-height:1.55; }h2 { color:#dce8f9; font-size:14px; }
+
+.worker-toggle { display:flex; align-items:center; gap:10px; padding:10px 0; }
+.worker-toggle input { width:auto; accent-color:#93fa30; }
+.worker-toggle span { color:#b5c3d6; }

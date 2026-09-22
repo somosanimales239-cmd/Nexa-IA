@@ -8,11 +8,13 @@ const state = {
   objectives: [],
   knowledgeDbStats: null,
   bridgeStatus: null,
+  factoryCurricula: [],
   knowledgeRoot: '',
   currentChatId: null,
   activeRequestId: null,
   activeAssistantMessageId: null,
   statsTimer: null,
+  bridgeTimer: null,
   lastUnityDetected: false,
   autoModeBusy: false,
   userPinnedToBottom: true,
@@ -387,6 +389,60 @@ async function saveMemory(text) {
 }
 
 
+async function refreshFactory() {
+  if (!window.nexa.factory) return;
+  try { state.factoryCurricula = await window.nexa.factory.list() || []; }
+  catch (_) { state.factoryCurricula = []; }
+  renderFactory();
+}
+
+function renderFactory() {
+  if (!els.factoryList) return;
+  const rows = state.factoryCurricula || [];
+  if (!rows.length) {
+    els.factoryList.innerHTML = '<div class="empty-list">No hay listas maestras todavía. Crea Toyota Corolla u otro modelo y Nexa generará la cola por años.</div>';
+    return;
+  }
+  els.factoryList.innerHTML = rows.map(function (row) {
+    const years = Number(row.year_count || 0), done = Number(row.complete_years || 0), review = Number(row.review_years || 0);
+    const configs = Number(row.config_count || 0), doneConfigs = Number(row.complete_configs || 0);
+    const pct = years ? Math.round(((done + review) / years) * 100) : 0;
+    const status = String(row.status || 'PAUSED');
+    const badgeClass = status === 'RUNNING' ? 'lime' : (status === 'COMPLETE' ? 'blue' : (status === 'ERROR' ? 'red' : 'muted'));
+    return '<article class="factory-card" data-factory-id="' + escapeHtml(row.id) + '">' +
+      '<div class="factory-head"><div><strong>' + escapeHtml(row.name) + '</strong><small>' + escapeHtml(row.make + ' ' + row.model + ' • ' + row.start_year + '–' + row.end_year + ' • ' + row.market + ' • objetivo ' + Math.round(Number(row.completion_threshold || .85)*100) + '%') + '</small></div><span class="badge ' + badgeClass + '">' + escapeHtml(status) + '</span></div>' +
+      '<div class="factory-meter"><div class="meter"><div class="meter-fill" style="width:' + pct + '%"></div></div></div>' +
+      '<div class="factory-summary"><div><strong>' + done + '/' + years + '</strong><small>AÑOS</small></div><div><strong>' + configs + '</strong><small>CONFIGS</small></div><div><strong>' + doneConfigs + '</strong><small>COMPLETE</small></div><div><strong>' + review + '</strong><small>REVIEW</small></div></div>' +
+      '<div class="factory-current">La fábrica termina las configuraciones de un año antes de pasar al siguiente. PARTIAL cuenta como cobertura parcial; VERIFIED conserva mayor confianza.</div>' +
+      '<div class="factory-actions">' +
+        (status === 'RUNNING' ? '<button class="tiny pause" data-factory-pause="' + escapeHtml(row.id) + '">Pausar</button>' : '<button class="tiny start" data-factory-start="' + escapeHtml(row.id) + '">Iniciar / continuar</button>') +
+        '<button class="tiny" data-factory-years="' + escapeHtml(row.id) + '">Ver años</button>' +
+        '<button class="tiny danger" data-factory-delete="' + escapeHtml(row.id) + '">Eliminar lista</button>' +
+      '</div></article>';
+  }).join('');
+}
+
+async function createFactoryFromForm(event) {
+  event.preventDefault();
+  const input = {
+    make:els.factoryMake.value.trim(), model:els.factoryModel.value.trim(),
+    startYear:Number(els.factoryStartYear.value), endYear:Number(els.factoryEndYear.value),
+    market:els.factoryMarket.value.trim() || 'US', completionThreshold:(Number(els.factoryThreshold.value)||85)/100,
+  };
+  if (!input.make || !input.model || !input.startYear || !input.endYear) return toast('Fabricante, modelo y rango de años son obligatorios.','error');
+  try {
+    await window.nexa.factory.create(input);
+    await refreshFactory();
+    toast('Lista maestra creada. Presiona Iniciar para comenzar el ciclo automático.','success');
+  } catch (error) { toast(error.message || String(error),'error'); }
+}
+
+async function showFactoryYears(curriculumId) {
+  const years = await window.nexa.factory.years(curriculumId);
+  const lines = (years || []).map(y => y.year + ': ' + y.discovery_status + ' / ' + y.research_status + ' / ' + Math.round(Number(y.coverage||0)*100) + '%');
+  window.alert(lines.join('\n') || 'No hay años en esta lista.');
+}
+
 function selectedObjectiveIdsForChat(chat = currentChat()) {
   if (!chat || !Array.isArray(chat.objectiveIds)) return [];
   return chat.objectiveIds.filter(function (id) { return state.objectives.some(function (obj) { return obj.id === id && obj.enabled !== false; }); });
@@ -653,8 +709,8 @@ async function refreshBridgeStatus() {
     state.bridgeStatus = status || null;
     els.bridgeApiBase.value = status?.baseUrl || 'http://127.0.0.1:32145';
     els.bridgeToken.value = status?.pairingToken || '';
-    els.bridgeStatusBadge.textContent = status?.ok ? 'ONLINE' : 'OFFLINE';
-    els.bridgeStatusBadge.className = 'badge ' + (status?.ok ? 'lime' : 'red');
+    els.bridgeStatusBadge.textContent = status?.extensionWorkerOnline ? 'EXT ONLINE' : (status?.ok ? 'API ONLINE' : 'OFFLINE');
+    els.bridgeStatusBadge.className = 'badge ' + (status?.extensionWorkerOnline ? 'lime' : (status?.ok ? 'blue' : 'red'));
     els.bridgeLastError.hidden = !status?.lastError;
     els.bridgeLastError.textContent = status?.lastError || '';
   } catch (error) {
@@ -787,7 +843,7 @@ function cacheElements() {
     'inspectorTitle','inspectorSubtitle','refreshBtn','ollamaBadge','startEngineBtn','warmModelBtn','unloadModelBtn','ramLabel','ramBar','aiRam','unityRam',
     'vramLabel','vramBar','aiVram','otherVram','gpuUsage','gpuTemp','profileBadge','profileDescription','unityBadge','unityAdvice',
     'memoryForm','memoryInput','memoryCount','includeMemories','memoryList',
-    'knowledgeDbBadge','knowledgeDbStats','knowledgeDbPath','objectiveForm','objectiveType','objectiveName','objectiveAutomotiveFields','objectiveMake','objectiveModel','objectiveYear','objectiveEngine','objectiveDisplacement','objectiveTransmission','objectiveMarket','objectiveTrim','objectiveDescription','researchProgress','researchProgressText','researchProgressState','objectiveList',
+    'knowledgeDbBadge','knowledgeDbStats','knowledgeDbPath','factoryForm','factoryMake','factoryModel','factoryStartYear','factoryEndYear','factoryMarket','factoryThreshold','factoryToyotaCorollaPreset','factoryProgress','factoryProgressText','factoryProgressState','factoryList','objectiveForm','objectiveType','objectiveName','objectiveAutomotiveFields','objectiveMake','objectiveModel','objectiveYear','objectiveEngine','objectiveDisplacement','objectiveTransmission','objectiveMarket','objectiveTrim','objectiveDescription','researchProgress','researchProgressText','researchProgressState','objectiveList',
     'libraryForm','libraryName','libraryCategory','knowledgeProgress','knowledgeProgressText','knowledgeProgressPct','knowledgeProgressBar','knowledgeCount','includeKnowledge','libraryList',
     'knowledgeSearchInput','knowledgeSearchBtn','knowledgeSearchResults','openKnowledgeBtn',
     'settingsForm','settingModel','settingBaseUrl','settingOllamaExe','settingModelsPath','settingContext','settingLightLayers','settingKeepAlive','settingAutoUnity',
@@ -861,6 +917,21 @@ function bindEvents() {
     if (memoryButton) { const message = chat.messages.find(item => item.id === memoryButton.dataset.memoryMessage); if (message) await saveMemory(message.content); }
     if (knowledgeButton) { const message = chat.messages.find(item => item.id === knowledgeButton.dataset.knowledgeMessage); if (message) await saveMessageToKnowledge(message); }
     if (copyButton) { const message = chat.messages.find(item => item.id === copyButton.dataset.copyMessage); if (message) { await navigator.clipboard.writeText(message.content); toast('Copiado.'); } }
+  });
+
+  els.factoryForm.addEventListener('submit', createFactoryFromForm);
+  els.factoryToyotaCorollaPreset.addEventListener('click', () => {
+    els.factoryMake.value='Toyota'; els.factoryModel.value='Corolla'; els.factoryStartYear.value='1969'; els.factoryEndYear.value='2027'; els.factoryMarket.value='US'; els.factoryThreshold.value='85';
+  });
+  els.factoryList.addEventListener('click', async event => {
+    const start=event.target.closest('[data-factory-start]');
+    if (start) { await window.nexa.factory.start(start.dataset.factoryStart); await refreshFactory(); toast('Auto Knowledge Factory iniciada.','success'); return; }
+    const pause=event.target.closest('[data-factory-pause]');
+    if (pause) { await window.nexa.factory.pause(pause.dataset.factoryPause); await refreshFactory(); toast('Fábrica pausada.'); return; }
+    const years=event.target.closest('[data-factory-years]');
+    if (years) { await showFactoryYears(years.dataset.factoryYears); return; }
+    const del=event.target.closest('[data-factory-delete]');
+    if (del) { if (!confirm('¿Eliminar esta lista maestra? Los objetivos/conocimiento ya guardados NO se borrarán.')) return; await window.nexa.factory.delete(del.dataset.factoryDelete); await refreshFactory(); toast('Lista maestra eliminada.'); }
   });
 
   els.objectiveType.addEventListener('change', () => { els.objectiveAutomotiveFields.hidden = els.objectiveType.value !== 'automotive'; });
@@ -967,6 +1038,14 @@ function bindEvents() {
     else if (packet.phase === 'done') { els.researchProgressText.textContent = packet.saved ? 'Validado y guardado persistentemente' : 'Investigado; no se guardó como confirmado'; els.researchProgressState.textContent = packet.status || 'DONE'; }
     else if (packet.phase === 'error') { els.researchProgressText.textContent = packet.error || 'Error de investigación'; els.researchProgressState.textContent = 'ERROR'; }
   });
+  if (window.nexa.factory?.onProgress) window.nexa.factory.onProgress(async packet => {
+    els.factoryProgress.hidden = false;
+    const phase=String(packet.phase || '').toUpperCase();
+    els.factoryProgressState.textContent = phase || 'WORK';
+    els.factoryProgressText.textContent = packet.message || packet.error || (packet.year ? ('Procesando ' + packet.year) : 'Auto Knowledge Factory trabajando…');
+    if (['DISCOVERED','REFRESH','COMPLETE','ERROR'].includes(phase)) await refreshFactory();
+    if (phase === 'COMPLETE') setTimeout(() => { els.factoryProgress.hidden=true; },2500);
+  });
   if (window.nexa.bridge?.onCapture) window.nexa.bridge.onCapture(async packet => {
     if (packet?.type === 'knowledge') {
       toast('Conocimiento recibido desde Chrome y guardado localmente.','success');
@@ -991,16 +1070,18 @@ function bindEvents() {
 
 async function init() {
   cacheElements(); bindEvents();
-  const initData = await Promise.all([window.nexa.store.get(), window.nexa.knowledge.list(), window.nexa.knowledgeDb.objectives(), window.nexa.knowledgeDb.stats()]);
+  const initData = await Promise.all([window.nexa.store.get(), window.nexa.knowledge.list(), window.nexa.knowledgeDb.objectives(), window.nexa.knowledgeDb.stats(), window.nexa.factory?.list ? window.nexa.factory.list() : Promise.resolve([])]);
   const snapshot = initData[0]; const knowledge = initData[1];
   state.settings = snapshot.settings || {}; state.chats = snapshot.chats || []; state.memories = snapshot.memories || [];
   state.libraries = knowledge?.libraries || []; state.knowledgeRoot = knowledge?.root || snapshot.knowledgeDirectory || '';
-  state.objectives = Array.isArray(initData[2]) ? initData[2] : []; state.knowledgeDbStats = initData[3] || null;
+  state.objectives = Array.isArray(initData[2]) ? initData[2] : []; state.knowledgeDbStats = initData[3] || null; state.factoryCurricula = Array.isArray(initData[4]) ? initData[4] : [];
   state.currentChatId = state.chats[0]?.id || null;
-  els.versionLabel.textContent = `v${snapshot.appVersion || '1.5.0'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.5.0'}`;
-  fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderPersistentKnowledge(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
+  els.versionLabel.textContent = `v${snapshot.appVersion || '1.6.0'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.6.0'}`;
+  fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderPersistentKnowledge(); renderFactory(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
   els.objectiveAutomotiveFields.hidden = els.objectiveType.value !== 'automotive';
-  await Promise.all([refreshStats(), refreshBridgeStatus()]); state.statsTimer = setInterval(refreshStats,2500);
+  await Promise.all([refreshStats(), refreshBridgeStatus()]);
+  state.statsTimer = setInterval(refreshStats,2500);
+  state.bridgeTimer = setInterval(refreshBridgeStatus,5000);
 }
 
 init().catch(error => {

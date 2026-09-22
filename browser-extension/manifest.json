@@ -1,14 +1,22 @@
 {
   "manifest_version": 3,
   "name": "Nexa AI Browser Bridge",
-  "version": "1.0.0",
-  "description": "Envía páginas, selecciones y conocimiento desde Chrome a la base local persistente de Nexa AI.",
-  "permissions": ["activeTab", "scripting", "storage", "contextMenus", "tabs"],
+  "version": "1.1.0",
+  "description": "Conecta Chrome con Nexa AI, guarda conocimiento local y ejecuta investigaciones web automáticas para Auto Knowledge Factory.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "contextMenus",
+    "tabs",
+    "alarms"
+  ],
   "host_permissions": [
     "http://127.0.0.1:32145/*",
-    "http://localhost:32145/*"
+    "http://localhost:32145/*",
+    "http://*/*",
+    "https://*/*"
   ],
-  "optional_host_permissions": ["http://*/*", "https://*/*"],
   "background": {
     "service_worker": "background.js"
   },

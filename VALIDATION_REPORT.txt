@@ -1,0 +1,29 @@
+NEXA AI 1.6.0 VALIDATION REPORT
+
+Validated in the preparation environment:
+- JavaScript syntax: PASS (main.js, preload.js, src/app.js)
+- Renderer/App Builder compatibility guard: PASS
+- Custom chat scrollbar: 11/11 PASS
+- Persistent Knowledge SQLite DB: PASS
+- Web research provider parser: PASS
+- Research validation compatibility: 6/6 PASS
+- Research applicability/persistence: 22/22 PASS
+- Browser Bridge local HTTP API: PASS
+  - token rejection/acceptance
+  - extension worker heartbeat
+  - objectives
+  - captures + deduplication
+  - memory
+  - command claim/result
+- Auto Knowledge Factory: PASS
+  - Toyota Corolla 1969-2027 seeds 59 years
+  - technical configuration persistence
+  - automatic objective links
+  - config completion and next-year advancement
+- Chrome Browser Extension static validation: PASS
+- Delivery/project validators: PASS
+- Baseline application tests: 16/16 PASS
+- ZIP integrity: to be verified after packaging
+
+Important scope note:
+The preparation environment cannot reproduce the user's exact Windows/Chrome/Ollama/network conditions. Live end-to-end Internet research against third-party sites and a running local gpt-oss:20b instance must still be exercised on the user's PC. The local API, database migrations, queue logic, parsers and factory progression were executed with real temporary SQLite databases during validation.

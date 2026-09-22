@@ -1,12 +1,21 @@
-NEXA AI BROWSER BRIDGE - CHROME EXTENSION
+Nexa AI Browser Bridge v1.1.0
 
-Instalacion manual:
-1. Descomprime esta carpeta en un lugar permanente.
-2. Abre Chrome y entra a chrome://extensions
-3. Activa Developer mode.
-4. Pulsa Load unpacked y selecciona esta carpeta.
-5. Abre Nexa AI > Ajustes > Browser Extension Bridge.
-6. Copia el Pairing token.
-7. Abre Ajustes de la extension, pega el token y pulsa Guardar y verificar.
+1. Open chrome://extensions
+2. Enable Developer mode.
+3. Choose Load unpacked and select this folder.
+4. Open Nexa AI > Settings > Browser Extension Bridge.
+5. Copy the Pairing token.
+6. Open the extension Options page, paste the token, keep Browser Worker enabled, and click Save and verify.
 
-La extension NO almacena tu conocimiento como fuente principal. Envia el contenido al API local de Nexa en 127.0.0.1:32145 y Nexa lo escribe en nexa-knowledge.db.
+Manual capture:
+- Save selected text to Knowledge.
+- Save the readable page to Knowledge.
+- Save selected text to lightweight Memory.
+
+Automatic Browser Worker:
+- Heartbeats to Nexa AI over API v1.
+- Polls Nexa's local browser command queue.
+- Handles web_research commands for Auto Knowledge Factory.
+- Returns source URLs and readable page text to Nexa, where verification/storage happens locally.
+
+The extension is NOT the knowledge database. Learned knowledge remains in Nexa's local SQLite database on the computer.

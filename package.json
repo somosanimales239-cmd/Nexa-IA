@@ -1,14 +1,14 @@
 {
   "name": "nexa-ai-local",
-  "version": "1.5.0",
-  "description": "Nexa AI - persistent local knowledge with Chrome Browser Bridge API, model-independent memory, web capture, research and Ollama control",
+  "version": "1.6.0",
+  "description": "Nexa AI - Auto Knowledge Factory, persistent local knowledge, Chrome Browser Bridge worker, model-independent memory, web research and Ollama control",
   "main": "main.js",
   "author": "Nexa AI",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:web-research && npm run validate:research-validation && npm run validate:research-applicability && npm run validate:browser-bridge && npm run validate:browser-extension && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check main.js && node --check preload.js && node --check src/app.js && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:web-research && npm run validate:research-validation && npm run validate:research-applicability && npm run validate:browser-bridge && npm run validate:auto-factory && npm run validate:browser-extension && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "build:linux": "npm run validate && electron-builder --linux AppImage deb --publish never",
     "build:mac": "npm run validate && electron-builder --mac dmg zip --publish never",
@@ -23,7 +23,8 @@
     "validate:research-validation": "node scripts/validate-research-validation.js",
     "validate:research-applicability": "node scripts/validate-research-applicability.js",
     "validate:browser-bridge": "node scripts/validate-browser-bridge.js",
-    "validate:browser-extension": "node scripts/validate-browser-extension.js"
+    "validate:browser-extension": "node scripts/validate-browser-extension.js",
+    "validate:auto-factory": "node scripts/validate-auto-knowledge-factory.js"
   },
   "devDependencies": {
     "electron": "43.1.0",

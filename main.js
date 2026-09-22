@@ -10,11 +10,12 @@ const { spawn, execFile } = require('child_process');
 const crypto = require('crypto');
 const { PersistentKnowledgeDB } = require('./lib/persistent-knowledge');
 const { BrowserBridge } = require('./lib/browser-bridge');
-const { gatherSources, objectiveDescriptor, buildResearchQuery } = require('./lib/web-research');
+const { gatherSources, objectiveDescriptor, buildResearchQuery, sourceType } = require('./lib/web-research');
 const { parseResearchValidation, protocolInstructions, safePartialFromText } = require('./lib/research-validation');
 const { meaningfulValue, assessApplicability, fallbackKnowledgeFromEvidence } = require('./lib/research-applicability');
+const { catalogProtocolInstructions, parseVehicleCatalog, genericVariant } = require('./lib/vehicle-catalog');
 
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 const DEFAULTS = Object.freeze({
   model: 'gpt-oss:20b',
   baseUrl: 'http://127.0.0.1:11434',
@@ -41,6 +42,7 @@ let knowledgeStore = null;
 let knowledgeDb = null;
 let browserBridge = null;
 let ollamaChild = null;
+const factoryWorkers = new Map();
 const activeRequests = new Map();
 
 function id(prefix = 'id') {
@@ -929,7 +931,8 @@ async function researchTopic(objectiveId, topic, options = {}) {
   const run = knowledgeDb.createResearchRun(objective.id, topic, query);
   if (mainWindow) mainWindow.webContents.send('research:progress', { phase:'search', objectiveId:objective.id, topic, query });
   try {
-    const gathered = await gatherSources(objective, topic, { maxSources:Number(settings.webMaxSources)||5, queryOverride:query });
+    const sourceGatherer = typeof options.sourceGatherer === 'function' ? options.sourceGatherer : gatherSources;
+    const gathered = await sourceGatherer(objective, topic, { maxSources:Number(settings.webMaxSources)||5, queryOverride:query });
     const sources = gathered.results || [];
     if (!sources.length) {
       knowledgeDb.finishResearchRun(run.id, { status:'NO_SOURCES', source_count:0, notes:'No se encontraron fuentes web utilizables.' });
@@ -1049,6 +1052,216 @@ async function maybeResearchChatQuestion(query, objectiveIds) {
   const result = await researchTopic(objective.id, String(query || '').slice(0,180), { queryOverride:buildResearchQuery(objective, query) });
   return result?.saved ? [result] : [];
 }
+
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function waitForBrowserCommand(commandId, timeoutMs = 42000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const command = knowledgeDb.getBrowserCommand(commandId);
+    if (!command) throw new Error('El comando del Browser Bridge desapareció.');
+    if (command.status === 'DONE') return command.result || {};
+    if (command.status === 'ERROR') throw new Error(command.error || 'La extensión no pudo completar la investigación web.');
+    await sleep(500);
+  }
+  throw new Error('La extensión no respondió a tiempo.');
+}
+
+async function gatherSourcesThroughBrowser(query, maxSources = 5, objective = null) {
+  if (!browserBridge?.status()?.extensionWorkerOnline) return null;
+  const queued = knowledgeDb.enqueueBrowserCommand('web_research', { query, maxSources });
+  try {
+    const result = await waitForBrowserCommand(queued.id, 42000);
+    const rows = Array.isArray(result.results) ? result.results : [];
+    if (!rows.length) return null;
+    return {
+      query,
+      providerDiagnostics:[{ provider:'Nexa AI Browser Bridge / Chrome', ok:true, count:rows.length, error:'' }],
+      results:rows.slice(0,maxSources).map(item => {
+        const rank = sourceType(item.url || '', objective?.make || '');
+        return { ...item, sourceType:rank.type, sourceScore:rank.score, accessDate:item.accessDate || new Date().toISOString() };
+      }),
+      transport:'browser-extension',
+    };
+  } catch (error) {
+    return { query, results:[], providerDiagnostics:[{ provider:'Browser Bridge', ok:false, count:0, error:error.message || String(error) }], transport:'browser-extension-error' };
+  }
+}
+
+async function gatherFactorySources(objective, topic, options = {}) {
+  const query = options.queryOverride || buildResearchQuery(objective, topic);
+  const maxSources = Math.max(1, Math.min(10, Number(options.maxSources) || Number(store.state.settings.webMaxSources) || 5));
+  const viaBrowser = await gatherSourcesThroughBrowser(query,maxSources,objective);
+  if (viaBrowser?.results?.length) return viaBrowser;
+  const direct = await gatherSources(objective,topic,{ maxSources, queryOverride:query });
+  if (viaBrowser?.providerDiagnostics?.length) direct.providerDiagnostics = [...viaBrowser.providerDiagnostics,...(direct.providerDiagnostics||[])];
+  direct.transport = 'direct-fallback';
+  return direct;
+}
+
+function factoryDiscoveryEvidence(sources) {
+  let used = 0;
+  const blocks = [];
+  for (let i=0;i<(sources||[]).length;i+=1) {
+    const src = sources[i];
+    const text = String(src.text || src.snippet || '').slice(0,4500);
+    const block = `SOURCE ${i+1}\nTITLE: ${src.title || ''}\nURL: ${src.url || ''}\nTYPE: ${src.sourceType || ''}\nTEXT: ${text}`;
+    if (used + block.length > 16000 && blocks.length) break;
+    blocks.push(block); used += block.length;
+  }
+  return blocks.join('\n\n');
+}
+
+async function ollamaVehicleCatalogDiscovery(yearRow, sources) {
+  const settings = store.state.settings;
+  const status = await ollamaStatus();
+  if (!status.online) throw new Error('Ollama debe estar iniciado para descubrir las variantes del vehículo.');
+  const prompt = [
+    'You are Nexa AI Vehicle Catalog Discovery.',
+    'Use ONLY the supplied source evidence. Do not invent trims, engines, transmissions, body styles, generations or drivetrains.',
+    'Goal: identify distinct technical configurations sold for the exact make/model/year/market. Group trims together when they share the same engine, transmission, drivetrain and body style.',
+    'If a field is not supported by the sources, leave it blank. Do not substitute another year or another market.',
+    `MAKE: ${yearRow.make}`,
+    `MODEL: ${yearRow.model}`,
+    `YEAR: ${yearRow.year}`,
+    `MARKET: ${yearRow.market}`,
+    '', factoryDiscoveryEvidence(sources), '', catalogProtocolInstructions(),
+  ].join('\n');
+  const options = { num_ctx:Math.max(4096,Number(settings.contextLength)||4096), temperature:0 };
+  if (settings.profile === 'light') options.num_gpu = Number(settings.lightGpuLayers)||0;
+  const attempts = [
+    { endpoint:'/api/generate', payload:{ model:settings.model,prompt,stream:false,think:false,keep_alive:settings.keepAlive,options } },
+    { endpoint:'/api/generate', payload:{ model:settings.model,prompt,stream:false,keep_alive:settings.keepAlive,options } },
+    { endpoint:'/api/chat', payload:{ model:settings.model,messages:[{ role:'system',content:'Extract exact vehicle catalog data from supplied evidence only.'},{ role:'user',content:prompt }],stream:false,think:false,keep_alive:settings.keepAlive,options } },
+  ];
+  const diagnostics=[];
+  for (const attempt of attempts) {
+    try {
+      const response = await requestJson('POST',settings.baseUrl + attempt.endpoint,attempt.payload,300000);
+      const candidates = researchValidationCandidates(response);
+      diagnostics.push(`${attempt.endpoint}: candidates=${candidates.length}`);
+      for (const candidate of candidates) {
+        const parsed = parseVehicleCatalog(candidate,{ make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market });
+        if (parsed?.variants?.length) return { ...parsed, diagnostics };
+      }
+    } catch (error) { diagnostics.push(`${attempt.endpoint}: ${error.message || String(error)}`); }
+  }
+  return { make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market,variants:[],diagnostics,parser:'no-catalog-output' };
+}
+
+async function discoverFactoryYear(curriculum, yearRow) {
+  knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'DISCOVERING', attempts:Number(yearRow.attempts||0)+1, last_error:'' });
+  if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'discovery',curriculumId:curriculum.id,year:yearRow.year,message:`Descubriendo ${yearRow.make} ${yearRow.model} ${yearRow.year}…` });
+  const objective = { type:'automotive',make:yearRow.make,model:yearRow.model,year:yearRow.year,market:yearRow.market,name:`${yearRow.make} ${yearRow.model} ${yearRow.year}` };
+  const topic = 'Vehicle Identification trims engines transmissions body styles drivetrain';
+  const query = `${yearRow.make} ${yearRow.model} ${yearRow.year} ${yearRow.market} trims engines transmissions specifications official`;
+  try {
+    const gathered = await gatherFactorySources(objective,topic,{ queryOverride:query,maxSources:Number(store.state.settings.webMaxSources)||5 });
+    const sources = gathered.results || [];
+    if (!sources.length) throw new Error('No se encontraron fuentes utilizables para descubrir variantes.');
+    const catalog = await ollamaVehicleCatalogDiscovery(yearRow,sources);
+    if (!catalog.variants?.length) {
+      const attempts = Number(yearRow.attempts||0)+1;
+      if (attempts >= 3) {
+        knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'NEEDS_REVIEW', research_status:'NEEDS_REVIEW', attempts, last_error:'El modelo no pudo estructurar las variantes después de 3 intentos.' });
+        return { ok:false,needsReview:true,reason:'No se pudieron estructurar variantes.' };
+      }
+      knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'QUEUED', attempts, last_error:'El modelo no devolvió variantes estructuradas; se reintentará.' });
+      return { ok:false,retry:true,reason:'Sin variantes estructuradas.' };
+    }
+    let created=0;
+    for (const variant of catalog.variants) {
+      const usedSources = (variant.source_indexes||[]).map(i=>sources[i-1]).filter(Boolean);
+      knowledgeDb.upsertFactoryConfig(curriculum.id,yearRow.id,variant,usedSources.length?usedSources:sources.slice(0,3));
+      created += 1;
+    }
+    knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:'COMPLETE', research_status:'RESEARCHING', variant_count:created, total_configs:created, attempts:0, last_error:'' });
+    knowledgeDb.refreshFactoryYearProgress(yearRow.id,curriculum.completion_threshold);
+    if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'discovered',curriculumId:curriculum.id,year:yearRow.year,variants:created,transport:gathered.transport||'direct',message:`${yearRow.year}: ${created} configuración(es) técnicas detectadas.` });
+    return { ok:true,variants:created,transport:gathered.transport||'direct' };
+  } catch (error) {
+    const attempts = Number(yearRow.attempts||0)+1;
+    const review = attempts >= 3;
+    knowledgeDb.setFactoryYearState(yearRow.id,{ discovery_status:review?'NEEDS_REVIEW':'QUEUED',research_status:review?'NEEDS_REVIEW':'QUEUED',attempts,last_error:error.message||String(error) });
+    if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'error',curriculumId:curriculum.id,year:yearRow.year,error:error.message||String(error),willRetry:!review });
+    return { ok:false,needsReview:review,error:error.message||String(error) };
+  }
+}
+
+async function researchFactoryConfig(curriculum, yearRow, config) {
+  const refreshed = knowledgeDb.refreshFactoryConfigProgress(config.id,curriculum.completion_threshold);
+  if (refreshed.status === 'COMPLETE') return { ok:true,complete:true };
+  const missing = knowledgeDb.missingTopics(refreshed.objective_id,1);
+  if (!missing.length) {
+    knowledgeDb.setFactoryConfigState(config.id,{ status:'COMPLETE',attempts:0,last_error:'' });
+    knowledgeDb.refreshFactoryYearProgress(yearRow.id,curriculum.completion_threshold);
+    return { ok:true,complete:true };
+  }
+  const topic = missing[0].topic;
+  knowledgeDb.setFactoryConfigState(config.id,{ status:'RESEARCHING' });
+  if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'research',curriculumId:curriculum.id,year:yearRow.year,configId:config.id,topic,message:`${yearRow.year} • ${config.engine_code||config.engine_displacement||'motor por identificar'} • ${topic}` });
+  try {
+    const result = await researchTopic(config.objective_id,topic,{ sourceGatherer:gatherFactorySources });
+    const after = knowledgeDb.refreshFactoryConfigProgress(config.id,curriculum.completion_threshold);
+    if (result?.ok) knowledgeDb.setFactoryConfigState(config.id,{ status:after.status,attempts:0,last_error:'' });
+    else {
+      const attempts = Number(config.attempts||0)+1;
+      if (attempts >= 3) knowledgeDb.setFactoryConfigState(config.id,{ status:'NEEDS_REVIEW',attempts,last_error:result?.error||result?.reason||'Investigación no confirmada.' });
+      else knowledgeDb.setFactoryConfigState(config.id,{ status:'RESEARCHING',attempts,last_error:result?.error||result?.reason||'Pendiente de confirmación.' });
+    }
+    knowledgeDb.refreshFactoryYearProgress(yearRow.id,curriculum.completion_threshold);
+    return { ok:Boolean(result?.ok),topic,result,progress:knowledgeDb.getFactoryConfig(config.id) };
+  } catch (error) {
+    const attempts=Number(config.attempts||0)+1;
+    knowledgeDb.setFactoryConfigState(config.id,{ status:attempts>=3?'NEEDS_REVIEW':'RESEARCHING',attempts,last_error:error.message||String(error) });
+    knowledgeDb.refreshFactoryYearProgress(yearRow.id,curriculum.completion_threshold);
+    return { ok:false,error:error.message||String(error) };
+  }
+}
+
+async function runFactoryLoop(curriculumId) {
+  if (factoryWorkers.get(curriculumId)?.running) return;
+  const worker={ running:true,stopRequested:false };
+  factoryWorkers.set(curriculumId,worker);
+  knowledgeDb.setFactoryCurriculumStatus(curriculumId,'RUNNING');
+  if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'started',curriculumId });
+  try {
+    while (!worker.stopRequested) {
+      const curriculum=knowledgeDb.getFactoryCurriculum(curriculumId);
+      if (!curriculum || curriculum.status !== 'RUNNING') break;
+      const work=knowledgeDb.nextFactoryWork(curriculumId);
+      if (!work) {
+        knowledgeDb.setFactoryCurriculumStatus(curriculumId,'COMPLETE');
+        if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'complete',curriculumId,message:'Curriculum completo.' });
+        break;
+      }
+      if (work.type==='DISCOVER_YEAR') await discoverFactoryYear(curriculum,work.year);
+      else if (work.type==='RESEARCH_CONFIG') await researchFactoryConfig(curriculum,work.year,work.config);
+      if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'refresh',curriculumId });
+      await sleep(900);
+    }
+  } catch (error) {
+    knowledgeDb.setFactoryCurriculumStatus(curriculumId,'ERROR');
+    if (mainWindow) mainWindow.webContents.send('factory:progress',{ phase:'error',curriculumId,error:error.message||String(error) });
+  } finally {
+    worker.running=false;
+    factoryWorkers.delete(curriculumId);
+  }
+}
+
+function startFactory(curriculumId) {
+  const curriculum=knowledgeDb.getFactoryCurriculum(curriculumId);
+  if (!curriculum) throw new Error('Curriculum no encontrado.');
+  knowledgeDb.setFactoryCurriculumStatus(curriculumId,'RUNNING');
+  setImmediate(()=>runFactoryLoop(curriculumId));
+  return knowledgeDb.getFactoryCurriculum(curriculumId);
+}
+function pauseFactory(curriculumId) {
+  const worker=factoryWorkers.get(String(curriculumId));
+  if (worker) worker.stopRequested=true;
+  return knowledgeDb.setFactoryCurriculumStatus(curriculumId,'PAUSED');
+}
+
 async function streamChat(event, payload) {
   const requestId = String(payload.requestId || id('req'));
   const settings = store.state.settings;
@@ -1259,6 +1472,14 @@ function registerIpc() {
   ipcMain.handle('knowledge-db:save', (_event, input) => knowledgeDb.saveKnowledge(input || {}));
   ipcMain.handle('research:topic', (_event, objectiveId, topic, options) => researchTopic(String(objectiveId), String(topic || ''), options || {}));
   ipcMain.handle('research:missing', (_event, objectiveId, limit) => researchMissing(String(objectiveId), Number(limit) || store.state.settings.researchBatchSize || 3));
+  ipcMain.handle('factory:list', () => knowledgeDb.listFactoryCurricula());
+  ipcMain.handle('factory:create', (_event, input) => knowledgeDb.createFactoryCurriculum(input || {}));
+  ipcMain.handle('factory:delete', (_event, curriculumId) => { pauseFactory(String(curriculumId)); return knowledgeDb.deleteFactoryCurriculum(String(curriculumId)); });
+  ipcMain.handle('factory:years', (_event, curriculumId) => knowledgeDb.listFactoryYears(String(curriculumId)));
+  ipcMain.handle('factory:configs', (_event, curriculumId, year) => knowledgeDb.listFactoryConfigs(String(curriculumId), year == null ? null : Number(year)));
+  ipcMain.handle('factory:start', (_event, curriculumId) => startFactory(String(curriculumId)));
+  ipcMain.handle('factory:pause', (_event, curriculumId) => pauseFactory(String(curriculumId)));
+  ipcMain.handle('factory:stats', () => knowledgeDb.factoryStats());
   ipcMain.handle('bridge:status', () => browserBridge ? browserBridge.status({ includeToken:true }) : { ok:false, lastError:'Browser Bridge no inicializado.' });
   ipcMain.handle('bridge:regenerate-token', () => browserBridge ? browserBridge.regenerateToken() : { ok:false, lastError:'Browser Bridge no inicializado.' });
   ipcMain.handle('knowledge:open-root', () => shell.openPath(knowledgeStore.root));
@@ -1286,11 +1507,15 @@ app.whenReady().then(async () => {
   try { await browserBridge.start(); } catch (error) { console.error('Nexa Browser Bridge:', error); }
   registerIpc();
   createWindow();
+  for (const curriculum of knowledgeDb.listFactoryCurricula()) {
+    if (curriculum.status === 'RUNNING' && curriculum.auto_continue !== false) setImmediate(() => runFactoryLoop(curriculum.id));
+  }
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('before-quit', () => {
+  for (const worker of factoryWorkers.values()) worker.stopRequested = true;
   for (const req of activeRequests.values()) { try { req.destroy(); } catch (_) {} }
   activeRequests.clear();
   if (browserBridge) browserBridge.stop().catch(() => {});

@@ -1,37 +1,48 @@
-# NEXA AI 1.5.0 — ONE-SHOT APP BUILDER PROMPT
+# NEXA AI 1.6.0 — ONE-SHOT APP BUILDER PROMPT
 
 Repository: `somosanimales239-cmd/Nexa-IA`
 
-Apply the complete **NEXA-04 Browser Bridge + Durable Local Learning API** update using the exact source in this package. Do not split it into partial rebuilds.
+Apply the complete **NEXA-05 Auto Knowledge Factory + Browser Worker** update using the exact source in this package. Do not split it into partial rebuilds.
 
-## Required architecture
+## Required factory architecture
 
-Keep all durable knowledge outside model weights. Add a stable loopback API at `127.0.0.1:32145/api/v1` so the included Chrome extension can feed pages/selections into `nexa-knowledge.db`.
+Add a persistent Auto Knowledge Factory that accepts make, model, start year, end year, market and completion threshold. Creating a curriculum must seed the whole year queue locally. The factory must process one year at a time:
 
-The extension must never be the primary memory store. A future 120B or other Ollama model must reuse the same local database.
+`DISCOVER -> CREATE/REUSE TECHNICAL OBJECTIVES -> RESEARCH MISSING TOPICS -> VERIFY -> STORE -> COVERAGE CHECK -> NEXT`
+
+The year discovery pass must use source evidence to identify distinct technical configurations (generation, body style, trims, engine, displacement, fuel, transmission, drivetrain). Do not invent unsupported configurations. Group trims only when they share the same technical configuration.
+
+Keep factory curricula, year state and technical configuration state in `nexa-knowledge.db`. Progress must survive restart and remain independent of Ollama model weights.
+
+A difficult year/configuration must retry and eventually become `NEEDS_REVIEW` without blocking the rest of the curriculum.
+
+Include the UI preset `Toyota Corolla / US / 1969–2027`, but keep the form generic for any make/model/year range.
+
+## Browser Worker
+
+Keep API v1 stable at `127.0.0.1:32145/api/v1` and activate the existing browser command queue for real use. The Chrome extension v1.1.0 must:
+
+- heartbeat to Nexa;
+- poll `/api/v1/commands/next`;
+- execute bounded `web_research`, `fetch_url`, and `open_url` commands;
+- return results through `/api/v1/commands/result`;
+- keep manual page/selection Knowledge capture and Memory capture working.
+
+The extension is transport only. All learned knowledge must still be persisted by Nexa on the computer.
 
 ## Security
 
 - bind Browser Bridge to 127.0.0.1 only;
-- require a generated pairing token for data endpoints;
-- expose bridge status/token controls in Nexa Settings;
-- keep captures `PARTIAL` by default;
-- preserve source URL and traceability.
-
-## Extension
-
-Keep `browser-extension/` as a standalone Manifest V3 Chrome extension source. It must capture selection/page on explicit user action and send it through API v1. Do not auto-record ordinary browsing.
-
-## Future browser control
-
-Keep the API v1 browser command queue endpoints and SQLite table as the compatibility foundation for later direct navigation. Do not add uncontrolled autonomous browser actions in this version.
+- require the pairing token for command/data endpoints;
+- keep captured web material as evidence, not trusted instructions;
+- do not promote arbitrary page text directly to VERIFIED knowledge.
 
 ## Preserve
 
-Preserve every existing Nexa feature: chats, Memory, Knowledge Libraries, persistent objectives, web research, Ollama control, Fast/Light GPU modes, Unity detection, system monitors, visible custom chat scrollbar, transparent jump-to-bottom button and Nexa logo.
+Preserve chats, Memory, Knowledge Libraries, persistent objectives, prior Internet research, Browser Bridge API v1 capture/memory behavior, Ollama control, Fast/Light GPU modes, Unity detection, system monitors, visible custom chat scrollbar, jump-to-bottom button and Nexa logo.
 
 ## Validation
 
-Run `npm run validate`; Browser Bridge validation and all prior validations must pass. Then use the existing Windows workflow for Installer, Portable and ZIP.
+Run `npm run validate`. It must include Auto Knowledge Factory, Browser Bridge worker, Chrome extension, research/applicability, persistent knowledge, renderer, scrollbar, delivery/project and baseline tests.
 
-Application version: `1.5.0`.
+Application version: `1.6.0`.
