@@ -1,71 +1,37 @@
-# NEXA AI 1.3.2 — ONE-SHOT APP BUILDER PROMPT
+# NEXA AI 1.5.0 — ONE-SHOT APP BUILDER PROMPT
 
 Repository: `somosanimales239-cmd/Nexa-IA`
 
-Apply the complete **NEXA-03 Persistent Knowledge + Verified Web Research** update as one coherent build. Do not split into throwaway partial versions.
+Apply the complete **NEXA-04 Browser Bridge + Durable Local Learning API** update using the exact source in this package. Do not split it into partial rebuilds.
 
-Use the exact project source in this package as the desired implementation. Preserve all existing working behavior.
+## Required architecture
 
-## Required result
+Keep all durable knowledge outside model weights. Add a stable loopback API at `127.0.0.1:32145/api/v1` so the included Chrome extension can feed pages/selections into `nexa-knowledge.db`.
 
-Nexa AI 1.3.2 must keep its local Ollama architecture while adding a real model-independent persistent SQLite knowledge database and optional source-traced Internet research.
+The extension must never be the primary memory store. A future 120B or other Ollama model must reuse the same local database.
 
-### Persistent knowledge
+## Security
 
-- Create/use `D:\LocalAI\NexaAI\Data\nexa-knowledge.db` when `D:\LocalAI` exists, otherwise userData fallback.
-- Keep model files in `D:\LocalAI\Models`; never put learned knowledge into model weights.
-- A future 120B model must immediately reuse the same database.
-- “Guardar en conocimiento” must create/version a real SQLite record.
+- bind Browser Bridge to 127.0.0.1 only;
+- require a generated pairing token for data endpoints;
+- expose bridge status/token controls in Nexa Settings;
+- keep captures `PARTIAL` by default;
+- preserve source URL and traceability.
 
-### Objectives
+## Extension
 
-Support `Automotive` and `General / Science / Other` objectives.
+Keep `browser-extension/` as a standalone Manifest V3 Chrome extension source. It must capture selection/page on explicit user action and send it through API v1. Do not auto-record ordinary browsing.
 
-For Automotive, create the baseline structure from `docs/KNOWLEDGE_AUTOMOTIVE_POLICY.md` with all new topics initially `MISSING`.
+## Future browser control
 
-Track `VERIFIED`, `PARTIAL`, `MISSING`, `CONFLICTING`, `OUTDATED`, `NOT VERIFIED`.
+Keep the API v1 browser command queue endpoints and SQLite table as the compatibility foundation for later direct navigation. Do not add uncontrolled autonomous browser actions in this version.
 
-### Internet research
+## Preserve
 
-When enabled:
+Preserve every existing Nexa feature: chats, Memory, Knowledge Libraries, persistent objectives, web research, Ollama control, Fast/Light GPU modes, Unity detection, system monitors, visible custom chat scrollbar, transparent jump-to-bottom button and Nexa logo.
 
-`LOCAL -> SEARCH -> VERIFY -> STORE -> ANSWER`
+## Validation
 
-- search local structured DB and Knowledge Libraries first;
-- if insufficient and exactly one objective is active in the chat, research the web;
-- rank OEM/Government above technical/secondary sources;
-- validate exact applicability using the local Ollama model;
-- keep URL/title/type/access date/confidence/status;
-- preserve old knowledge versions;
-- do not store full protected pages as a substitute for the source.
+Run `npm run validate`; Browser Bridge validation and all prior validations must pass. Then use the existing Windows workflow for Installer, Portable and ZIP.
 
-### Knowledge UI
-
-Keep Document Libraries and add:
-
-- database stats/path;
-- create objective form;
-- attach objective to chat;
-- topic research button;
-- `Completar faltantes` batch action;
-- research progress state;
-- combined persistent/document local search.
-
-### Settings
-
-Add:
-
-- Internet research toggle;
-- automatic research-on-missing toggle;
-- maximum web sources;
-- batch size.
-
-### Preserve
-
-Preserve the custom visible chat scrollbar and semi-transparent `Ir al final` button, new Nexa AI logo/icon, chats, memory, document libraries, Fast/Light modes, Unity detection and Windows packaging.
-
-### Validation
-
-Run `npm run validate`. It must include the persistent knowledge test and all baseline tests. Then run the existing Windows workflow to completion and deliver Installer EXE, Portable EXE and ZIP.
-
-Application version: `1.3.2`.
+Application version: `1.5.0`.

@@ -14,7 +14,7 @@ const html = read('src/index.html');
 
 test('Nexa AI package and Electron entry graph are valid', () => {
   assert.equal(packageJson.build.productName, 'Nexa AI');
-  assert.equal(packageJson.version, '1.3.2');
+  assert.equal(packageJson.version, '1.5.0');
   assert.ok(fs.existsSync(path.join(root, packageJson.main)));
   for (const file of ['preload.js','src/index.html','src/app.js','src/app.css']) assert.ok(fs.existsSync(path.join(root, file)), file);
 });
@@ -165,4 +165,22 @@ test('web research is opt-in controllable, source ranked, validated and persiste
   assert.match(main, /knowledgeDb\.saveKnowledge/);
   assert.match(appJs, /Completar faltantes/);
   assert.match(html, /Permitir investigación por Internet/);
+});
+
+
+test('Chrome Browser Bridge uses a versioned loopback API and persistent storage', () => {
+  const bridge = read('lib/browser-bridge.js');
+  const dbModule = read('lib/persistent-knowledge.js');
+  const manifest = JSON.parse(read('browser-extension/manifest.json'));
+  assert.match(bridge, /127\.0\.0\.1/);
+  assert.match(bridge, /api\/v1\/captures/);
+  assert.match(bridge, /pairingToken/);
+  assert.match(bridge, /Authorization/);
+  assert.match(dbModule, /browser_captures/);
+  assert.match(dbModule, /saveBrowserCapture/);
+  assert.match(dbModule, /browser_commands/);
+  assert.equal(manifest.manifest_version, 3);
+  assert.ok(manifest.host_permissions.includes('http://127.0.0.1:32145/*'));
+  assert.match(preload, /bridge:/);
+  assert.match(html, /Browser Extension Bridge/);
 });

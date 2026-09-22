@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Nexa AI Browser Bridge",
+  "version": "1.0.0",
+  "description": "Envía páginas, selecciones y conocimiento desde Chrome a la base local persistente de Nexa AI.",
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus", "tabs"],
+  "host_permissions": [
+    "http://127.0.0.1:32145/*",
+    "http://localhost:32145/*"
+  ],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Nexa AI Browser Bridge",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "32": "icons/icon32.png",
+      "64": "icons/icon64.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html",
+  "icons": {
+    "32": "icons/icon32.png",
+    "64": "icons/icon64.png",
+    "128": "icons/icon128.png"
+  }
+}

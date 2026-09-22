@@ -76,4 +76,9 @@ contextBridge.exposeInMainWorld('nexa', {
     missing: (objectiveId, limit) => ipcRenderer.invoke('research:missing', objectiveId, limit),
     onProgress: callback => on('research:progress', callback),
   }),
+  bridge: Object.freeze({
+    status: () => ipcRenderer.invoke('bridge:status'),
+    regenerateToken: () => ipcRenderer.invoke('bridge:regenerate-token'),
+    onCapture: callback => on('bridge:capture', callback),
+  }),
 });

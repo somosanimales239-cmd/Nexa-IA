@@ -1,21 +1,4 @@
-Nexa AI 1.3.2 complete update source prepared.
-
-Major additions:
-- persistent SQLite knowledge database
-- structured learning/research objectives
-- automotive missing-knowledge template
-- web research + local Ollama validation
-- source traceability and confidence
-- non-destructive knowledge versioning
-- chat “Guardar en conocimiento” writes to persistent DB
-- model-independent knowledge usable by future models
-
-Preserved:
-- local Ollama chat
-- offline operation when web research is not needed
-- memory and chat history
-- document Knowledge Libraries
-- fast/light GPU profiles
-- Unity detection
-- custom chat scrollbar and jump-to-bottom button
-- Nexa AI branded desktop/installer logo
+Nexa AI 1.5.0 complete source prepared.
+Browser Bridge API v1 and Chrome extension source are included.
+Durable browser learning writes to the existing local SQLite knowledge database.
+Run npm run validate before Windows packaging.

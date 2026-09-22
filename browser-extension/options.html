@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nexa AI Browser Bridge - Ajustes</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="card">
+    <div class="brand"><img src="icons/icon128.png" alt="Nexa AI"><div><h1>Nexa AI Browser Bridge</h1><p>Conexión local segura hacia tu conocimiento persistente.</p></div></div>
+    <label>API local<input id="apiBase" value="http://127.0.0.1:32145"></label>
+    <label>Pairing token<input id="token" type="password" placeholder="Cópialo desde Nexa AI > Ajustes"></label>
+    <div class="row"><button id="toggleToken">Mostrar token</button><button id="save" class="primary">Guardar y verificar</button></div>
+    <div id="status" class="status">Sin verificar.</div>
+    <section>
+      <h2>Cómo conectarla</h2>
+      <p>1. Abre Nexa AI → Ajustes → Browser Extension Bridge.</p>
+      <p>2. Copia el Pairing token y pégalo aquí.</p>
+      <p>3. Pulsa “Guardar y verificar”.</p>
+      <p>La API escucha únicamente en <strong>127.0.0.1</strong>; el conocimiento se escribe en la base local de tu computadora, no en la extensión.</p>
+    </section>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,30 +1,9 @@
-## 1.3.2
-- Replaced brittle gpt-oss JSON validation with a robust plain-text Nexa validation protocol.
-- Added two validation attempts (thinking disabled first, default thinking second) without relying on Ollama structured-output JSON mode.
-- Added JSON/protocol parsers plus a safe PARTIAL fallback so web research no longer dies solely because the model emitted non-JSON text.
-- Research diagnostics are persisted with the research run for future troubleshooting.
-- Preserved persistent SQLite knowledge, web search fallbacks, custom scrollbar, transparent jump button, and branded icon.
-
-## 1.3.1
-- Fixed Internet research failures caused by relying on a single DuckDuckGo HTML endpoint.
-- Added multi-provider fallback search: DuckDuckGo HTML, DuckDuckGo Lite, Bing RSS, and Bing HTML.
-- Added provider diagnostics to errors so SEARCH failures identify which provider was blocked or returned no results.
-- Preserved persistent SQLite knowledge, source validation, custom chat scrollbar, transparent jump-to-bottom button and Nexa desktop logo.
-
-# Changelog
-
-## 1.3.0
-- Added real persistent SQLite knowledge database: `nexa-knowledge.db`.
-- Added structured Knowledge Objectives, including an Automotive template with 37 baseline systems/topics created as `MISSING`.
-- Added knowledge status lifecycle: VERIFIED, PARTIAL, MISSING, CONFLICTING, OUTDATED and NOT VERIFIED.
-- Added source traceability, confidence, versions, duplicate detection and research audit records.
-- Added Internet research controls and manual “Completar faltantes” / topic research.
-- Added local-first chat research: when one objective is attached to the chat and local knowledge is insufficient, Nexa can search, validate with the local model, persist validated knowledge and then answer.
-- Added “Guardar en conocimiento” on chat messages; it writes to the SQLite database rather than only changing UI state.
-- Preserved document Knowledge Libraries, chat memory, custom chat scrollbar, transparent “Ir al final” button and Nexa desktop logo.
-- Knowledge remains outside model weights so future local models can reuse the same database.
-
-## 1.2.6
-- Added dedicated in-app chat scrollbar rail and draggable thumb.
-- Kept the semi-transparent “Ir al final” button visible inside the chat viewport.
-- Added visible installed-build version next to the Nexa AI brand.
+## 1.5.0
+- Added Nexa AI Browser Bridge: a versioned HTTP API bound to `127.0.0.1:32145`.
+- Added persistent pairing-token authorization and Settings controls to copy/show/regenerate the token.
+- Added SQLite `browser_captures` and `browser_commands` tables without replacing existing knowledge/memory.
+- Chrome Browser Bridge extension can save a selection, a readable page, or lightweight memory directly to the computer.
+- Browser captures are deduplicated, source-traced and stored as `PARTIAL` knowledge by default.
+- Added a future browser-command channel so later browser-navigation work can evolve primarily in the extension/API protocol.
+- Added end-to-end local API validation covering auth, objectives, capture persistence, deduplication, memory and command queue.
+- Preserved Nexa AI 1.4.0 research/applicability improvements and all existing UI/Ollama features.

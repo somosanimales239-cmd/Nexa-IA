@@ -332,3 +332,12 @@ button { color: inherit; }
 .persistent-hit { border-color:rgba(168,255,62,.16); }
 .persistent-hit .knowledge-status { display:inline-block; margin-left:5px; padding:2px 5px; border-radius:999px; font-size:7px; font-weight:800; background:rgba(168,255,62,.08); color:var(--lime); }
 .source-chip.web-source { border-color:rgba(168,255,62,.16); background:rgba(168,255,62,.05); color:#baff73; }
+
+/* Nexa AI Browser Extension Bridge */
+.bridge-settings-note { display:grid; gap:8px; }
+.bridge-settings-note label { display:grid; gap:5px; color:#7e8ba0; font-size:10px; }
+.bridge-settings-note input { font-size:10px; }
+.bridge-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.bridge-actions { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+.danger-soft { color:#ff9da7 !important; border-color:rgba(255,95,109,.18) !important; }
+.bridge-error { padding:8px 9px; border-radius:8px; background:rgba(255,95,109,.07); border:1px solid rgba(255,95,109,.18); color:#ff9da7; font-size:9px; line-height:1.4; }

@@ -14,7 +14,7 @@
         <div class="brand-mark brand-logo-shell"><img class="brand-logo" src="../assets/logo-128.png" alt="Nexa AI" /></div>
         <div>
           <div class="brand-name">Nexa AI</div>
-          <div class="brand-sub">Local Intelligence <span id="brandVersion" class="brand-version">v1.3.2</span></div>
+          <div class="brand-sub">Local Intelligence <span id="brandVersion" class="brand-version">v1.5.0</span></div>
         </div>
       </div>
 
@@ -227,7 +227,19 @@
           <button id="openDataBtn" class="secondary full" type="button">Abrir carpeta de datos</button>
         </form>
         <div class="settings-note"><strong>Datos independientes del modelo</strong><p>Chats y memoria viven en Data. Knowledge Libraries viven en Knowledge. Instalar otro modelo, por ejemplo 120B, no cambia estos datos.</p></div>
-        <div class="version-line">Nexa AI <span id="versionLabel">v1.3.2</span></div>
+        <div class="settings-note bridge-settings-note">
+          <div class="bridge-head"><strong>Browser Extension Bridge</strong><span id="bridgeStatusBadge" class="badge muted">Checking</span></div>
+          <p>La extensión de Chrome envía páginas, selecciones y conocimiento directamente a la base local de Nexa. El API solo escucha en 127.0.0.1.</p>
+          <label>API local<input id="bridgeApiBase" readonly value="http://127.0.0.1:32145" /></label>
+          <label>Pairing token<input id="bridgeToken" readonly type="password" /></label>
+          <div class="bridge-actions">
+            <button id="copyBridgeTokenBtn" class="secondary small" type="button">Copiar token</button>
+            <button id="toggleBridgeTokenBtn" class="secondary small" type="button">Mostrar</button>
+            <button id="regenerateBridgeTokenBtn" class="secondary small danger-soft" type="button">Regenerar</button>
+          </div>
+          <div id="bridgeLastError" class="bridge-error" hidden></div>
+        </div>
+        <div class="version-line">Nexa AI <span id="versionLabel">v1.5.0</span></div>
       </section>
     </aside>
   </div>

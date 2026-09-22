@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nexa AI Browser Bridge</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <img src="icons/icon64.png" alt="Nexa AI">
+      <div><h1>Nexa AI</h1><p>Browser Bridge</p></div>
+      <span id="status" class="status">...</span>
+    </header>
+
+    <div id="pairingWarning" class="warning" hidden>Configura el pairing token primero.</div>
+
+    <label>Objetivo persistente
+      <select id="objectiveSelect"><option value="">General Knowledge</option></select>
+    </label>
+    <label>Tema / categoría opcional
+      <input id="topicInput" placeholder="Ej: Fuel Pressure / Physics / Chemistry">
+    </label>
+
+    <button id="saveSelection" class="primary">Guardar selección en Knowledge</button>
+    <button id="savePage" class="primary secondary-green">Guardar página completa</button>
+    <button id="saveMemory" class="secondary">Guardar selección como memoria</button>
+
+    <div id="result" class="result" hidden></div>
+    <footer><button id="optionsBtn" class="link">Ajustes / Pairing</button><span>API v1</span></footer>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

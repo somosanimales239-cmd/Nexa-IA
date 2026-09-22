@@ -7,6 +7,7 @@ const state = {
   libraries: [],
   objectives: [],
   knowledgeDbStats: null,
+  bridgeStatus: null,
   knowledgeRoot: '',
   currentChatId: null,
   activeRequestId: null,
@@ -408,7 +409,7 @@ function objectiveSubtitle(obj) {
 
 function renderPersistentKnowledge() {
   var stats = state.knowledgeDbStats || {};
-  if (els.knowledgeDbStats) els.knowledgeDbStats.textContent = String(stats.active_entries || 0) + ' entradas activas • ' + String(stats.verified_entries || 0) + ' verificadas • ' + String(stats.knowledge_sources || 0) + ' fuentes';
+  if (els.knowledgeDbStats) els.knowledgeDbStats.textContent = String(stats.active_entries || 0) + ' entradas activas • ' + String(stats.verified_entries || 0) + ' verificadas • ' + String(stats.partial_entries || 0) + ' parciales • ' + String(stats.saved_evidence || 0) + ' evidencias • ' + String(stats.knowledge_sources || 0) + ' fuentes';
   if (els.knowledgeDbPath) els.knowledgeDbPath.textContent = stats.dbPath || 'D\\LocalAI\\NexaAI\\Data\\nexa-knowledge.db';
   if (!els.objectiveList) return;
   if (!state.objectives.length) {
@@ -497,9 +498,13 @@ async function runObjectiveResearch(objectiveId, topic) {
   els.researchProgressState.textContent = 'WEB';
   var result = await window.nexa.research.topic(objectiveId, clean, {});
   await refreshPersistentKnowledge();
-  if (result?.ok && result?.saved) toast('Investigación validada y escrita en nexa-knowledge.db.','success');
-  else if (result?.ok) toast('Se investigó, pero no se guardó como confirmado: ' + (result.verification_status || 'NOT VERIFIED'));
-  else toast(result?.error || 'La investigación no pudo completarse.','error');
+  if (result?.ok && result?.saved) {
+    toast('Guardado en nexa-knowledge.db como ' + String(result.verification_status || 'PARTIAL') + ' (' + Math.round(Number(result.confidence || 0) * 100) + '%).','success');
+  } else if (result?.ok && result?.evidenceSaved) {
+    toast('Las fuentes y la evidencia quedaron guardadas persistentemente, pero el tema sigue pendiente de confirmación.');
+  } else if (result?.ok) {
+    toast('Investigación terminada sin evidencia utilizable: ' + String(result.reason || result.verification_status || 'NOT VERIFIED'));
+  } else toast(result?.error || 'La investigación no pudo completarse.','error');
   setTimeout(function () { els.researchProgress.hidden = true; }, 1800);
 }
 
@@ -509,8 +514,13 @@ async function runMissingResearch(objectiveId) {
   els.researchProgressState.textContent = 'WEB';
   var result = await window.nexa.research.missing(objectiveId, Number(state.settings.researchBatchSize || 3));
   await refreshPersistentKnowledge();
-  var saved = Array.isArray(result?.results) ? result.results.filter(function (item) { return item.saved; }).length : 0;
-  toast('Investigación terminada: ' + saved + ' entrada(s) guardada(s) persistentemente.', saved ? 'success' : '');
+  var rows = Array.isArray(result?.results) ? result.results : [];
+  var saved = rows.filter(function (item) { return item.saved; }).length;
+  var evidence = rows.filter(function (item) { return item.evidenceSaved; }).length;
+  var verified = rows.filter(function (item) { return item.saved && item.verification_status === 'VERIFIED'; }).length;
+  var partial = rows.filter(function (item) { return item.saved && item.verification_status === 'PARTIAL'; }).length;
+  var message = 'Investigación: ' + verified + ' VERIFIED, ' + partial + ' PARTIAL, ' + evidence + ' con evidencia persistente.';
+  toast(message, saved ? 'success' : '');
   setTimeout(function () { els.researchProgress.hidden = true; }, 1800);
 }
 
@@ -636,6 +646,40 @@ function fillSettings() {
   els.settingResearchBatch.value = state.settings.researchBatchSize || 3;
 }
 
+async function refreshBridgeStatus() {
+  if (!window.nexa.bridge) return;
+  try {
+    const status = await window.nexa.bridge.status();
+    state.bridgeStatus = status || null;
+    els.bridgeApiBase.value = status?.baseUrl || 'http://127.0.0.1:32145';
+    els.bridgeToken.value = status?.pairingToken || '';
+    els.bridgeStatusBadge.textContent = status?.ok ? 'ONLINE' : 'OFFLINE';
+    els.bridgeStatusBadge.className = 'badge ' + (status?.ok ? 'lime' : 'red');
+    els.bridgeLastError.hidden = !status?.lastError;
+    els.bridgeLastError.textContent = status?.lastError || '';
+  } catch (error) {
+    els.bridgeStatusBadge.textContent = 'ERROR';
+    els.bridgeStatusBadge.className = 'badge red';
+    els.bridgeLastError.hidden = false;
+    els.bridgeLastError.textContent = error.message || String(error);
+  }
+}
+
+async function copyBridgeToken() {
+  const value = els.bridgeToken.value || '';
+  if (!value) return toast('No hay pairing token disponible.','error');
+  await navigator.clipboard.writeText(value);
+  toast('Pairing token copiado.','success');
+}
+
+async function regenerateBridgeToken() {
+  if (!confirm('¿Regenerar el pairing token? La extensión actual dejará de conectarse hasta que pegues el token nuevo.')) return;
+  const status = await window.nexa.bridge.regenerateToken();
+  state.bridgeStatus = status || null;
+  await refreshBridgeStatus();
+  toast('Pairing token regenerado.','success');
+}
+
 async function saveSettings(event) {
   event.preventDefault();
   const patch = {
@@ -747,7 +791,7 @@ function cacheElements() {
     'libraryForm','libraryName','libraryCategory','knowledgeProgress','knowledgeProgressText','knowledgeProgressPct','knowledgeProgressBar','knowledgeCount','includeKnowledge','libraryList',
     'knowledgeSearchInput','knowledgeSearchBtn','knowledgeSearchResults','openKnowledgeBtn',
     'settingsForm','settingModel','settingBaseUrl','settingOllamaExe','settingModelsPath','settingContext','settingLightLayers','settingKeepAlive','settingAutoUnity',
-    'settingKnowledgeChunks','settingKnowledgeChars','settingInternetResearch','settingAutoResearch','settingWebSources','settingResearchBatch','openDataBtn','versionLabel','toastHost',
+    'settingKnowledgeChunks','settingKnowledgeChars','settingInternetResearch','settingAutoResearch','settingWebSources','settingResearchBatch','openDataBtn','bridgeStatusBadge','bridgeApiBase','bridgeToken','copyBridgeTokenBtn','toggleBridgeTokenBtn','regenerateBridgeTokenBtn','bridgeLastError','versionLabel','toastHost',
   ];
   for (const id of ids) els[id] = document.getElementById(id);
 }
@@ -903,6 +947,13 @@ function bindEvents() {
 
   els.settingsForm.addEventListener('submit', saveSettings);
   els.openDataBtn.addEventListener('click', () => window.nexa.system.openDataFolder());
+  els.copyBridgeTokenBtn.addEventListener('click', copyBridgeToken);
+  els.toggleBridgeTokenBtn.addEventListener('click', () => {
+    const show = els.bridgeToken.type === 'password';
+    els.bridgeToken.type = show ? 'text' : 'password';
+    els.toggleBridgeTokenBtn.textContent = show ? 'Ocultar' : 'Mostrar';
+  });
+  els.regenerateBridgeTokenBtn.addEventListener('click', regenerateBridgeToken);
 
   window.nexa.chat.onToken(packet => { if (packet.requestId === state.activeRequestId) updateStreamingMessage(packet.content || ''); });
   window.nexa.chat.onContext(packet => { if (packet.requestId === state.activeRequestId) attachSources(packet.sources || []); });
@@ -915,6 +966,17 @@ function bindEvents() {
     else if (packet.phase === 'batch') { els.researchProgressText.textContent = 'Faltante ' + String(packet.current || 0) + '/' + String(packet.total || 0) + ': ' + (packet.topic || ''); els.researchProgressState.textContent = 'BATCH'; }
     else if (packet.phase === 'done') { els.researchProgressText.textContent = packet.saved ? 'Validado y guardado persistentemente' : 'Investigado; no se guardó como confirmado'; els.researchProgressState.textContent = packet.status || 'DONE'; }
     else if (packet.phase === 'error') { els.researchProgressText.textContent = packet.error || 'Error de investigación'; els.researchProgressState.textContent = 'ERROR'; }
+  });
+  if (window.nexa.bridge?.onCapture) window.nexa.bridge.onCapture(async packet => {
+    if (packet?.type === 'knowledge') {
+      toast('Conocimiento recibido desde Chrome y guardado localmente.','success');
+      await refreshPersistentKnowledge();
+    } else if (packet?.type === 'memory') {
+      toast('Memoria recibida desde Chrome.','success');
+      const snapshot = await window.nexa.store.get();
+      state.memories = snapshot.memories || [];
+      renderMemories();
+    }
   });
   window.nexa.knowledge.onProgress(packet => {
     els.knowledgeProgress.hidden = false;
@@ -935,10 +997,10 @@ async function init() {
   state.libraries = knowledge?.libraries || []; state.knowledgeRoot = knowledge?.root || snapshot.knowledgeDirectory || '';
   state.objectives = Array.isArray(initData[2]) ? initData[2] : []; state.knowledgeDbStats = initData[3] || null;
   state.currentChatId = state.chats[0]?.id || null;
-  els.versionLabel.textContent = `v${snapshot.appVersion || '1.3.2'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.3.2'}`;
+  els.versionLabel.textContent = `v${snapshot.appVersion || '1.5.0'}`; if (els.brandVersion) els.brandVersion.textContent = `v${snapshot.appVersion || '1.5.0'}`;
   fillSettings(); updateModeUi(); renderChats(); renderMemories(); renderPersistentKnowledge(); renderLibraries(); renderCurrentChat(); resizePrompt(); updateScrollUi();
   els.objectiveAutomotiveFields.hidden = els.objectiveType.value !== 'automotive';
-  await refreshStats(); state.statsTimer = setInterval(refreshStats,2500);
+  await Promise.all([refreshStats(), refreshBridgeStatus()]); state.statsTimer = setInterval(refreshStats,2500);
 }
 
 init().catch(error => {
