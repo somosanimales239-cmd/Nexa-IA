@@ -1351,15 +1351,31 @@ async function streamChat(event, payload) {
   const persistent = persistentKnowledgeSystemPrompt(lastUser, objectiveIds);
   const groundingPolicy = responseGroundingPolicy(persistent.sources.length, knowledge.sources.length);
   const systemParts = [groundingPolicy, memories, persistent.prompt, knowledge.prompt].filter(Boolean);
-  const clipped = sourceMessages.slice(-36).map(message => ({ role: message.role, content: String(message.content || '') }));
+  // NEXA_CHAT_COMPLETION_FIX_V1
+  // Keep enough recent conversation for continuity while reserving room for the
+  // answer itself. Knowledge and memories are already injected separately.
+  const clipped = sourceMessages.slice(-8).map(message => ({
+    role: message.role,
+    content: String(message.content || ''),
+  }));
   const messages = systemParts.length ? [{ role: 'system', content: systemParts.join('\n\n') }, ...clipped] : clipped;
-  const options = { num_ctx: Number(settings.contextLength) || 4096 };
+  const effectiveContextLength = Math.max(12288, Number(settings.contextLength) || 4096);
+  const options = { num_ctx: effectiveContextLength, num_predict: 4096 };
   if (settings.profile === 'light') options.num_gpu = Number(settings.lightGpuLayers) || 0;
 
   const combinedSources = [...persistent.sources, ...knowledge.sources];
   if (combinedSources.length) event.sender.send('chat:context', { requestId, sources: combinedSources });
 
-  const body = Buffer.from(JSON.stringify({ model: settings.model, messages, stream: true, keep_alive: settings.keepAlive, options }));
+  // GPT-OSS can stream internal reasoning separately from message.content.
+  // Nexa's normal chat should spend the generation budget on the visible answer.
+  const body = Buffer.from(JSON.stringify({
+    model: settings.model,
+    messages,
+    stream: true,
+    think: false,
+    keep_alive: settings.keepAlive,
+    options,
+  }));
   const req = http.request({
     method: 'POST', hostname: url.hostname, port: url.port || 80, path: url.pathname,
     headers: { 'Content-Type': 'application/json', 'Content-Length': body.length },

@@ -315,7 +315,6 @@ function renderCurrentChat() {
       <div>
         <div class="message-head"><span class="message-author">${message.role === 'assistant' ? 'Nexa AI' : 'Tú'}</span><span class="message-time">${formatTime(message.createdAt)}</span></div>
         <div class="message-content">${renderMessageContent(message.content)}</div>
-        ${sourceChips(message)}
         <div class="message-actions">
           <button class="message-action" data-memory-message="${escapeHtml(message.id)}">Guardar en memoria</button>
           <button class="message-action" data-knowledge-message="${escapeHtml(message.id)}">Guardar en conocimiento</button>
@@ -343,8 +342,10 @@ function attachSources(sources) {
   const chat = currentChat();
   const message = chat?.messages.find(item => item.id === state.activeAssistantMessageId);
   if (!message) return;
+  // NEXA_CHAT_SOURCES_HIDDEN_V1
+  // Keep source metadata attached to the message for Knowledge/traceability,
+  // but do not redraw source chips in the visible conversation.
   message.sources = Array.isArray(sources) ? sources : [];
-  renderCurrentChat();
 }
 
 function setGenerating(active) {
