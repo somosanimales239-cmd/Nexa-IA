@@ -1,0 +1,26 @@
+Nexa AI v1.7.0 Build 106 — Nexa Visual Evaluator v1
+
+NUEVOS ARCHIVOS
+- lib/visual-evaluator.js
+- scripts/validate-visual-evaluator.js
+- README-Image-Visual-Evaluator-Build-106.txt
+- INSTALL-QWEN-VISUAL-EVALUATOR.cmd
+- Install-Nexa-Build-106.js
+- Rollback-Nexa-Build-106.js
+- INSTALL-BUILD-106.cmd
+- ROLLBACK-BUILD-106.cmd
+
+ARCHIVOS QUE EL INSTALADOR MODIFICA QUIRÚRGICAMENTE
+- main.js
+- preload.js
+- src/app.js
+- src/index.html
+- package.json
+- nexa.project.json
+
+BASE REQUERIDA
+- Nexa AI v1.7.0 Build 105
+- README-Image-Stage1-Build-105.txt debe existir en la raíz.
+
+BACKUP
+- .nexa-build106-backup/
