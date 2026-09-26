@@ -1,0 +1,52 @@
+<div class="settings-card" id="referenceConsistencyCard">
+  <h3>Reference Images · Consistency</h3>
+  <label class="switch-row">
+    <span>Enable visual references</span>
+    <input type="checkbox" id="refEnabled" />
+  </label>
+
+  <div class="field-grid two-col">
+    <label>
+      <span>Mode</span>
+      <select id="refMode">
+        <option value="consistency">Consistency</option>
+        <option value="likeness">Likeness</option>
+        <option value="style">Style</option>
+        <option value="composition">Composition</option>
+        <option value="product">Product</option>
+      </select>
+    </label>
+    <label>
+      <span>Strength</span>
+      <input type="range" id="refStrength" min="0" max="100" value="65" />
+    </label>
+    <label>
+      <span>Identity Weight</span>
+      <input type="range" id="refIdentityWeight" min="0" max="100" value="80" />
+    </label>
+    <label>
+      <span>Style Weight</span>
+      <input type="range" id="refStyleWeight" min="0" max="100" value="60" />
+    </label>
+    <label>
+      <span>Composition Weight</span>
+      <input type="range" id="refCompositionWeight" min="0" max="100" value="50" />
+    </label>
+  </div>
+
+  <label class="switch-row">
+    <span>Use references during retries</span>
+    <input type="checkbox" id="refUseInRetries" checked />
+  </label>
+  <label class="switch-row">
+    <span>Carry best approved image as anchor</span>
+    <input type="checkbox" id="refCarryAnchor" checked />
+  </label>
+
+  <label>
+    <span>Reference images</span>
+    <input type="file" id="refImages" accept="image/*" multiple />
+  </label>
+
+  <div id="refPreviewList" class="thumb-list"></div>
+</div>
