@@ -729,6 +729,105 @@ function extractFirstJsonObject(raw) {
   return candidate;
 }
 
+
+function normalizeChoiceSlug(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeChoiceCompact(value) {
+  return normalizeChoiceSlug(value).replace(/ /g, '');
+}
+
+function normalizeComfyChoice(value, allowed, aliases = {}, fallback = '') {
+  const list = Array.isArray(allowed) ? allowed.filter(Boolean).map(String) : [];
+  if (!list.length) return String(fallback || value || '').trim();
+  const direct = String(value || '').trim();
+  if (list.includes(direct)) return direct;
+
+  const byExactSlug = new Map();
+  const byCompactSlug = new Map();
+  for (const item of list) {
+    byExactSlug.set(normalizeChoiceSlug(item), item);
+    byCompactSlug.set(normalizeChoiceCompact(item), item);
+  }
+
+  const candidates = [direct];
+  const aliasCandidates = aliases[normalizeChoiceSlug(direct)] || aliases[normalizeChoiceCompact(direct)] || aliases[direct] || [];
+  for (const candidate of aliasCandidates) candidates.push(candidate);
+
+  for (const candidate of candidates) {
+    const exactSlug = normalizeChoiceSlug(candidate);
+    const compactSlug = normalizeChoiceCompact(candidate);
+    if (byExactSlug.has(exactSlug)) return byExactSlug.get(exactSlug);
+    if (byCompactSlug.has(compactSlug)) return byCompactSlug.get(compactSlug);
+  }
+
+  return list.includes(fallback) ? fallback : list[0];
+}
+
+async function getComfyKSamplerOptions(baseUrl) {
+  const cleanBase = baseUrl.replace(/\/$/, '');
+  try {
+    const info = await requestJsonUrl('GET', `${cleanBase}/object_info/KSampler`, undefined, 6000);
+    const required = info?.KSampler?.input?.required || info?.input?.required || {};
+    const samplerNames = Array.isArray(required?.sampler_name?.[0]) ? required.sampler_name[0] : (Array.isArray(required?.sampler_name) ? required.sampler_name : []);
+    const schedulers = Array.isArray(required?.scheduler?.[0]) ? required.scheduler[0] : (Array.isArray(required?.scheduler) ? required.scheduler : []);
+    return {
+      samplerNames: Array.isArray(samplerNames) ? samplerNames.map(String) : [],
+      schedulers: Array.isArray(schedulers) ? schedulers.map(String) : [],
+    };
+  } catch (_) {
+    return { samplerNames: [], schedulers: [] };
+  }
+}
+
+function normalizeComfyPlan(plan, comfyOptions) {
+  const samplerAliases = {
+    'euler a': ['euler_ancestral', 'euler a', 'euler ancestral'],
+    'eulera': ['euler_ancestral', 'euler a', 'euler ancestral'],
+    'euler ancestral': ['euler_ancestral', 'euler a'],
+    'euler': ['euler'],
+    'heun': ['heun'],
+    'dpm++ 2m': ['dpmpp_2m', 'dpmpp 2m'],
+    'dpm++2m': ['dpmpp_2m', 'dpmpp 2m'],
+    'dpmpp 2m': ['dpmpp_2m', 'dpmpp 2m'],
+    'dpm++ 2m sde': ['dpmpp_2m_sde', 'dpmpp 2m sde'],
+    'dpm++2m sde': ['dpmpp_2m_sde', 'dpmpp 2m sde'],
+    'dpmpp 2m sde': ['dpmpp_2m_sde', 'dpmpp 2m sde'],
+    'dpm++ sde': ['dpmpp_sde', 'dpmpp sde'],
+    'ddim': ['ddim'],
+    'uni pc': ['uni_pc', 'uni pc'],
+    'uni pc bh2': ['uni_pc_bh2', 'uni pc bh2'],
+  };
+  const schedulerAliases = {
+    'karras': ['karras'],
+    'normal': ['normal'],
+    'simple': ['simple'],
+    'exponential': ['exponential'],
+    'sgm uniform': ['sgm_uniform', 'sgm uniform'],
+    'ddim uniform': ['ddim_uniform', 'ddim uniform'],
+    'linear quadratic': ['linear_quadratic', 'linear quadratic'],
+    'kl optimal': ['kl_optimal', 'kl optimal'],
+    'beta': ['beta'],
+  };
+  const samplerFallback = comfyOptions.samplerNames.includes('euler_ancestral')
+    ? 'euler_ancestral'
+    : (comfyOptions.samplerNames.includes('euler') ? 'euler' : (comfyOptions.samplerNames[0] || 'euler'));
+  const schedulerFallback = comfyOptions.schedulers.includes('karras')
+    ? 'karras'
+    : (comfyOptions.schedulers.includes('normal') ? 'normal' : (comfyOptions.schedulers[0] || 'normal'));
+
+  return {
+    ...plan,
+    sampler_name: normalizeComfyChoice(plan.sampler_name, comfyOptions.samplerNames, samplerAliases, samplerFallback),
+    scheduler: normalizeComfyChoice(plan.scheduler, comfyOptions.schedulers, schedulerAliases, schedulerFallback),
+  };
+}
+
 function clampDimension(value, fallback) {
   let n = Number(value || fallback) || fallback;
   n = Math.max(512, Math.min(1536, Math.round(n / 64) * 64));
@@ -959,11 +1058,14 @@ async function generateImage(payload) {
   const job = { requestId, baseUrl, promptId: null, cancelled: false };
   activeImageRequests.set(requestId, job);
   try {
-    const plan = await buildImagePlanWithOllama(userRequest);
+    const draftPlan = await buildImagePlanWithOllama(userRequest);
     const checkpoint = await resolveComfyCheckpoint(baseUrl);
+    const comfyOptions = await getComfyKSamplerOptions(baseUrl);
+    const plan = normalizeComfyPlan(draftPlan, comfyOptions);
     const workflow = buildComfyWorkflow(plan, checkpoint);
     const promptId = await queueComfyPrompt(baseUrl, workflow, `nexa-${requestId}`);
     job.promptId = promptId;
+    if (job.cancelled) throw new Error('Generación detenida por el usuario.');
     const images = await waitForComfyResult(baseUrl, promptId, requestId);
     const saved = await copyComfyImageToNexa(baseUrl, images[0], requestId, plan);
     return {
@@ -982,7 +1084,11 @@ async function stopImageGeneration(requestId) {
   const job = activeImageRequests.get(String(requestId));
   if (!job) return false;
   job.cancelled = true;
-  try { await requestJsonUrl('POST', `${job.baseUrl.replace(/\/$/, '')}/interrupt`, {}, 5000).catch(() => null); }
+  const cleanBase = job.baseUrl.replace(/\/$/, '');
+  try {
+    if (job.promptId) await requestJsonUrl('POST', `${cleanBase}/queue`, { delete: [job.promptId] }, 5000).catch(() => null);
+  } catch (_) {}
+  try { await requestJsonUrl('POST', `${cleanBase}/interrupt`, {}, 5000).catch(() => null); }
   catch (_) {}
   return true;
 }
