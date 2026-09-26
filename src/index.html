@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: file:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self';" />
   <title>Nexa AI</title>
   <link rel="stylesheet" href="app.css" />
 </head>
@@ -78,7 +78,10 @@
 
       <div class="composer-wrap">
         <div id="generationBanner" class="generation-banner" hidden>
-          <span class="pulse-dot"></span><span>Generando localmente…</span>
+          <div id="generationBannerVisual" class="banner-loader text-loader" aria-hidden="true">
+            <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+          </div>
+          <span id="generationBannerLabel">Nexa está escribiendo…</span>
           <button id="stopBtn" class="tiny danger" data-testid="stop-generation">Detener</button>
         </div>
         <div class="composer">
@@ -237,6 +240,9 @@
             <label>Faltantes por lote<input id="settingResearchBatch" type="number" min="1" max="10" /></label>
           </div>
           <label>Keep alive<input id="settingKeepAlive" placeholder="5m" /></label>
+          <div class="settings-note image-settings-note"><strong>Generación de imágenes · Etapa 1</strong><p>Nexa detecta solicitudes de imagen, crea prompt positivo y negativo internamente, decide estilo y tamaño, y envía el trabajo a ComfyUI.</p></div>
+          <label>ComfyUI API<input id="settingComfyBaseUrl" placeholder="http://127.0.0.1:8188" /></label>
+          <label>Checkpoint ComfyUI<input id="settingComfyCheckpoint" placeholder="sd_xl_base_1.0.safetensors" /></label>
           <label class="toggle-row"><input id="settingAutoUnity" type="checkbox" /><span>Cambiar automáticamente a Ligero al detectar Unity</span></label>
           <button class="primary full" type="submit" data-testid="save-settings">Guardar ajustes</button>
           <button id="openDataBtn" class="secondary full" type="button">Abrir carpeta de datos</button>
@@ -257,6 +263,25 @@
         <div class="version-line">Nexa AI <span id="versionLabel">v1.7.0</span></div>
       </section>
     </aside>
+  </div>
+
+  <div id="imageLightbox" class="image-lightbox" hidden>
+    <div class="image-lightbox-backdrop" data-close-lightbox="1"></div>
+    <div class="image-lightbox-panel">
+      <div class="image-lightbox-toolbar">
+        <div class="image-lightbox-meta">
+          <strong id="imageLightboxTitle">Imagen generada</strong>
+          <small id="imageLightboxMeta">Vista grande</small>
+        </div>
+        <div class="image-lightbox-actions">
+          <button id="imageLightboxDownload" class="secondary small" type="button">Descargar</button>
+          <button id="imageLightboxClose" class="secondary small" type="button">Cerrar</button>
+        </div>
+      </div>
+      <div class="image-lightbox-canvas">
+        <img id="imageLightboxImg" alt="Imagen generada por Nexa" />
+      </div>
+    </div>
   </div>
 
   <div id="toastHost" class="toast-host"></div>

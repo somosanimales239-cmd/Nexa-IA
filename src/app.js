@@ -13,6 +13,8 @@ const state = {
   currentChatId: null,
   activeRequestId: null,
   activeAssistantMessageId: null,
+  activeRequestMode: null,
+  lightboxImagePath: '',
   statsTimer: null,
   bridgeTimer: null,
   lastUnityDetected: false,
@@ -31,6 +33,34 @@ function safeHttpUrl(value) {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
     return parsed.toString();
   } catch (_) { return ''; }
+}
+
+
+function looksLikeImageRequest(value) {
+  const source = String(value || '').trim();
+  if (!source) return false;
+  if (/^\/(image|img)\b/i.test(source)) return true;
+  if (/(^|\s)(prompt|promt|prompt positivo|prompt negativo)\b/i.test(source) && !/(genera|generame|generate|create|crear|crea|draw|render|haz|hazme|dibuja).{0,20}(imagen|image|photo|picture|foto|render)/i.test(source)) {
+    return false;
+  }
+  return /(genera|generame|generate|create|crear|crea|haz|hazme|make|draw|render|dibuja|imagina|quiero|necesito|mu[eé]strame).{0,35}(imagen|image|photo|picture|foto|render|illustration|ilustraci[oó]n|portrait|retrato)/i.test(source)
+    || /(imagen|image|photo|picture|foto).{0,20}(de|of)\b/i.test(source);
+}
+
+function fileSrc(value) {
+  const source = String(value || '').trim();
+  if (!source) return '';
+  const normalized = source.replace(/\\/g, '/');
+  if (/^file:\/\//i.test(normalized)) return encodeURI(normalized);
+  return encodeURI(`file:///${normalized.replace(/^\/+/, '')}`);
+}
+
+function renderTextLoader() {
+  return '<div class="typing-loader-inline" aria-label="Nexa está escribiendo"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
+}
+
+function renderImageLoader() {
+  return '<div class="image-loader-card"><div class="image-loader-logo" aria-hidden="true"></div><div class="image-loader-copy"><strong>Creando imagen…</strong><small>Nexa está generando el prompt positivo y negativo, eligiendo estilo y tamaño, y esperando el render de ComfyUI.</small></div></div>';
 }
 
 function renderMessageContent(value) {
@@ -297,6 +327,47 @@ function sourceChips(message) {
   return '<div class="source-row"><span class="source-row-label">Fuentes usadas</span>' + chips + '</div>';
 }
 
+function renderMessageBody(message) {
+  const isPending = message.id === state.activeAssistantMessageId;
+  const mode = state.activeRequestMode;
+  if (message.kind === 'image') {
+    const image = message.image || {};
+    const hasImage = Boolean(image.path);
+    const caption = message.content ? '<div class="image-caption">' + renderMessageContent(message.content) + '</div>' : '';
+    if (!hasImage && isPending && mode === 'image') {
+      return '<div class="image-message-shell">' + caption + renderImageLoader() + '</div>';
+    }
+    if (hasImage) {
+      const src = fileSrc(image.path);
+      const meta = [];
+      if (image.style) meta.push('Estilo ' + escapeHtml(image.style));
+      if (image.width && image.height) meta.push(escapeHtml(String(image.width) + '×' + String(image.height)));
+      const metaHtml = meta.length ? '<small>' + meta.join(' · ') + '</small>' : '';
+      return '<div class="image-message-shell"><div class="image-card clean">' +
+        caption +
+        '<button type="button" class="generated-image-button" data-open-image="' + escapeHtml(image.path) + '" data-image-meta="' + escapeHtml(meta.join(' · ')) + '"><img class="generated-chat-image" src="' + src + '" alt="Imagen generada por Nexa" loading="lazy" /></button>' +
+        '<div class="image-card-actions">' +
+          '<button type="button" class="image-card-action" data-open-image="' + escapeHtml(image.path) + '" data-image-meta="' + escapeHtml(meta.join(' · ')) + '">Ver grande</button>' +
+          '<button type="button" class="image-card-action" data-download-image="' + escapeHtml(image.path) + '">Descargar</button>' +
+        '</div>' + metaHtml +
+      '</div></div>';
+    }
+    return '<div class="image-message-shell">' + caption + '</div>';
+  }
+  if (isPending && mode === 'text' && !String(message.content || '').trim() && message.role === 'assistant') return renderTextLoader();
+  return renderMessageContent(message.content);
+}
+
+function renderMessageActions(message) {
+  if (message.kind === 'image') return '';
+  if (!String(message.content || '').trim()) return '';
+  return '<div class="message-actions">' +
+    '<button class="message-action" data-memory-message="' + escapeHtml(message.id) + '">Guardar en memoria</button>' +
+    '<button class="message-action" data-knowledge-message="' + escapeHtml(message.id) + '">Guardar en conocimiento</button>' +
+    '<button class="message-action" data-copy-message="' + escapeHtml(message.id) + '">Copiar</button>' +
+  '</div>';
+}
+
 function renderCurrentChat() {
   const chat = currentChat();
   els.chatTitle.value = chat?.title || 'Nuevo chat';
@@ -309,19 +380,19 @@ function renderCurrentChat() {
   }
   els.welcomeState.hidden = true;
   els.chatScrollShell.hidden = false;
-  els.messages.innerHTML = chat.messages.map(message => `
-    <article class="message ${escapeHtml(message.role)}" data-message-id="${escapeHtml(message.id)}">
+  els.messages.innerHTML = chat.messages.map(message => {
+    const bodyClass = message.kind === 'image' ? 'message-content image-content' : 'message-content';
+    return `
+    <article class="message ${escapeHtml(message.role)} ${message.kind === 'image' ? 'message-image' : ''}" data-message-id="${escapeHtml(message.id)}">
       <div class="avatar">${message.role === 'assistant' ? 'N' : 'TÚ'}</div>
       <div>
         <div class="message-head"><span class="message-author">${message.role === 'assistant' ? 'Nexa AI' : 'Tú'}</span><span class="message-time">${formatTime(message.createdAt)}</span></div>
-        <div class="message-content">${renderMessageContent(message.content)}</div>
-        <div class="message-actions">
-          <button class="message-action" data-memory-message="${escapeHtml(message.id)}">Guardar en memoria</button>
-          <button class="message-action" data-knowledge-message="${escapeHtml(message.id)}">Guardar en conocimiento</button>
-          <button class="message-action" data-copy-message="${escapeHtml(message.id)}">Copiar</button>
-        </div>
+        <div class="${bodyClass}">${renderMessageBody(message)}</div>
+        ${message.kind === 'image' ? '' : sourceChips(message)}
+        ${renderMessageActions(message)}
       </div>
-    </article>`).join('');
+    </article>`;
+  }).join('');
   scrollMessagesToBottom(true);
   updateScrollUi();
 }
@@ -342,14 +413,21 @@ function attachSources(sources) {
   const chat = currentChat();
   const message = chat?.messages.find(item => item.id === state.activeAssistantMessageId);
   if (!message) return;
-  // NEXA_CHAT_SOURCES_HIDDEN_V1
-  // Keep source metadata attached to the message for Knowledge/traceability,
-  // but do not redraw source chips in the visible conversation.
   message.sources = Array.isArray(sources) ? sources : [];
+  renderCurrentChat();
 }
 
-function setGenerating(active) {
+function setGenerating(active, mode = null) {
+  state.activeRequestMode = active ? (mode || state.activeRequestMode || 'text') : null;
   els.generationBanner.hidden = !active;
+  if (active) {
+    const imageMode = state.activeRequestMode === 'image';
+    els.generationBannerLabel.textContent = imageMode ? 'Nexa está generando una imagen…' : 'Nexa está escribiendo…';
+    els.generationBannerVisual.className = 'banner-loader ' + (imageMode ? 'image-loader' : 'text-loader');
+    els.generationBannerVisual.innerHTML = imageMode
+      ? ''
+      : '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+  }
   els.sendBtn.disabled = active;
   els.promptInput.disabled = active;
   if (!active) els.promptInput.focus();
@@ -359,10 +437,11 @@ async function sendMessage() {
   const text = els.promptInput.value.trim();
   if (!text || state.activeRequestId) return;
   const chat = ensureChat();
+  const wantsImage = looksLikeImageRequest(text);
   const now = new Date().toISOString();
-  chat.messages.push({ id:uid('msg'), role:'user', content:text, createdAt:now, sources:[] });
+  chat.messages.push({ id:uid('msg'), role:'user', kind:'text', content:text, createdAt:now, sources:[] });
   autoTitle(chat);
-  chat.messages.push({ id:uid('msg'), role:'assistant', content:'', createdAt:new Date().toISOString(), sources:[] });
+  chat.messages.push({ id:uid('msg'), role:'assistant', kind:wantsImage ? 'image' : 'text', content:'', image:null, createdAt:new Date().toISOString(), sources:[] });
   state.activeAssistantMessageId = chat.messages[chat.messages.length - 1].id;
   els.promptInput.value = '';
   resizePrompt(); renderCurrentChat();
@@ -370,8 +449,26 @@ async function sendMessage() {
 
   const requestId = uid('req');
   state.activeRequestId = requestId;
-  setGenerating(true);
+  setGenerating(true, wantsImage ? 'image' : 'text');
   try {
+    if (wantsImage) {
+      const result = await window.nexa.images.generate({ requestId, userRequest:text });
+      if (!result?.ok || !result?.image?.path) throw new Error(result?.error || 'No se pudo generar la imagen.');
+      const assistant = chat.messages.find(message => message.id === state.activeAssistantMessageId);
+      if (assistant) {
+        assistant.kind = 'image';
+        assistant.content = result.summary || 'Aquí tienes la imagen.';
+        assistant.image = result.image;
+      }
+      await persistChat(chat);
+      state.activeRequestId = null;
+      state.activeAssistantMessageId = null;
+      setGenerating(false);
+      renderCurrentChat();
+      toast('Imagen generada en ComfyUI.','success');
+      return;
+    }
+
     const result = await window.nexa.chat.start({
       requestId,
       libraryIds: Array.isArray(chat.libraryIds) ? chat.libraryIds : [],
@@ -409,6 +506,11 @@ function finishWithError(message) {
 
 async function stopGeneration() {
   if (!state.activeRequestId) return;
+  if (state.activeRequestMode === 'image' && window.nexa.images?.stop) {
+    await window.nexa.images.stop(state.activeRequestId);
+    finishWithError('Generación de imagen detenida por el usuario.');
+    return;
+  }
   await window.nexa.chat.stop(state.activeRequestId);
   await finishGeneration();
 }
@@ -763,6 +865,8 @@ function fillSettings() {
   els.settingContext.value = state.settings.contextLength || 4096;
   els.settingLightLayers.value = state.settings.lightGpuLayers ?? 6;
   els.settingKeepAlive.value = state.settings.keepAlive || '5m';
+  els.settingComfyBaseUrl.value = state.settings.comfyBaseUrl || 'http://127.0.0.1:8188';
+  els.settingComfyCheckpoint.value = state.settings.comfyCheckpoint || '';
   els.settingAutoUnity.checked = Boolean(state.settings.autoUnityMode);
   els.settingKnowledgeChunks.value = state.settings.knowledgeMaxChunks || 6;
   els.settingKnowledgeChars.value = state.settings.knowledgeMaxChars || 7500;
@@ -816,6 +920,8 @@ async function saveSettings(event) {
     contextLength: Number(els.settingContext.value) || 4096,
     lightGpuLayers: Number(els.settingLightLayers.value) || 0,
     keepAlive: els.settingKeepAlive.value.trim() || '5m',
+    comfyBaseUrl: els.settingComfyBaseUrl.value.trim() || 'http://127.0.0.1:8188',
+    comfyCheckpoint: els.settingComfyCheckpoint.value.trim(),
     autoUnityMode: els.settingAutoUnity.checked,
     knowledgeMaxChunks: Number(els.settingKnowledgeChunks.value) || 6,
     knowledgeMaxChars: Number(els.settingKnowledgeChars.value) || 7500,
@@ -907,18 +1013,45 @@ function resizePrompt() {
   els.promptInput.style.height = `${Math.min(180,Math.max(28,els.promptInput.scrollHeight))}px`;
 }
 
+async function downloadImage(filePath) {
+  if (!filePath || !window.nexa.images?.saveAs) return;
+  try {
+    const result = await window.nexa.images.saveAs(filePath);
+    if (result?.ok) toast('Imagen descargada.','success');
+  } catch (error) {
+    toast(error.message || String(error),'error');
+  }
+}
+
+function openImageLightbox(filePath, meta = '') {
+  if (!filePath) return;
+  state.lightboxImagePath = filePath;
+  els.imageLightboxImg.src = fileSrc(filePath);
+  els.imageLightboxTitle.textContent = 'Imagen generada';
+  els.imageLightboxMeta.textContent = meta || 'Vista grande';
+  els.imageLightbox.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeImageLightbox() {
+  state.lightboxImagePath = '';
+  els.imageLightbox.hidden = true;
+  els.imageLightboxImg.removeAttribute('src');
+  document.body.style.overflow = '';
+}
+
 function cacheElements() {
   const ids = [
     'newChatBtn','chatSearch','chatList','chatTitle','brandVersion','engineDot','engineText','modelText','knowledgeTopStatus','fastModeBtn','lightModeBtn',
-    'welcomeState','welcomeStartEngine','welcomeWarmModel','chatScrollShell','messages','chatScrollRail','chatScrollThumb','jumpToBottomBtn','generationBanner','stopBtn','promptInput','sendBtn','composerHint',
+    'welcomeState','welcomeStartEngine','welcomeWarmModel','chatScrollShell','messages','chatScrollRail','chatScrollThumb','jumpToBottomBtn','generationBanner','generationBannerLabel','generationBannerVisual','stopBtn','promptInput','sendBtn','composerHint',
     'inspectorTitle','inspectorSubtitle','refreshBtn','ollamaBadge','startEngineBtn','warmModelBtn','unloadModelBtn','ramLabel','ramBar','aiRam','unityRam',
     'vramLabel','vramBar','aiVram','otherVram','gpuUsage','gpuTemp','profileBadge','profileDescription','unityBadge','unityAdvice',
     'memoryForm','memoryInput','memoryCount','includeMemories','memoryList',
     'knowledgeDbBadge','knowledgeDbStats','knowledgeDbPath','factoryForm','factoryMake','factoryModel','factoryStartYear','factoryEndYear','factoryMarket','factoryThreshold','factoryToyotaCorollaPreset','factoryProgress','factoryProgressText','factoryProgressState','factoryList','objectiveForm','objectiveType','objectiveName','objectiveAutomotiveFields','objectiveMake','objectiveModel','objectiveYear','objectiveEngine','objectiveDisplacement','objectiveTransmission','objectiveMarket','objectiveTrim','objectiveDescription','researchProgress','researchProgressText','researchProgressState','objectiveList',
     'libraryForm','libraryName','libraryCategory','knowledgeProgress','knowledgeProgressText','knowledgeProgressPct','knowledgeProgressBar','knowledgeCount','includeKnowledge','libraryList',
     'knowledgeSearchInput','knowledgeSearchBtn','knowledgeSearchResults','openKnowledgeBtn',
-    'settingsForm','settingModel','settingBaseUrl','settingOllamaExe','settingModelsPath','settingContext','settingLightLayers','settingKeepAlive','settingAutoUnity',
-    'settingKnowledgeChunks','settingKnowledgeChars','settingInternetResearch','settingAutoResearch','settingWebSources','settingResearchBatch','openDataBtn','bridgeStatusBadge','bridgeApiBase','bridgeToken','copyBridgeTokenBtn','toggleBridgeTokenBtn','regenerateBridgeTokenBtn','bridgeLastError','versionLabel','toastHost',
+    'settingsForm','settingModel','settingBaseUrl','settingOllamaExe','settingModelsPath','settingContext','settingLightLayers','settingKeepAlive','settingComfyBaseUrl','settingComfyCheckpoint','settingAutoUnity',
+    'settingKnowledgeChunks','settingKnowledgeChars','settingInternetResearch','settingAutoResearch','settingWebSources','settingResearchBatch','openDataBtn','bridgeStatusBadge','bridgeApiBase','bridgeToken','copyBridgeTokenBtn','toggleBridgeTokenBtn','regenerateBridgeTokenBtn','bridgeLastError','versionLabel','imageLightbox','imageLightboxImg','imageLightboxTitle','imageLightboxMeta','imageLightboxDownload','imageLightboxClose','toastHost',
   ];
   for (const id of ids) els[id] = document.getElementById(id);
 }
@@ -973,7 +1106,13 @@ function bindEvents() {
   window.addEventListener('pointercancel', endScrollThumbDrag);
   window.addEventListener('resize', updateScrollUi);
   els.promptInput.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } });
-  document.addEventListener('keydown', event => { if (event.ctrlKey && event.key.toLowerCase() === 'n') { event.preventDefault(); els.newChatBtn.click(); } });
+  document.addEventListener('keydown', event => {
+    if (event.ctrlKey && event.key.toLowerCase() === 'n') { event.preventDefault(); els.newChatBtn.click(); }
+    if (event.key === 'Escape' && !els.imageLightbox.hidden) closeImageLightbox();
+  });
+  els.imageLightboxClose.addEventListener('click', closeImageLightbox);
+  els.imageLightboxDownload.addEventListener('click', () => downloadImage(state.lightboxImagePath));
+  els.imageLightbox.addEventListener('click', event => { if (event.target.closest('[data-close-lightbox]')) closeImageLightbox(); });
   document.querySelectorAll('.nav-button').forEach(button => button.addEventListener('click', () => showPanel(button.dataset.panel)));
   els.refreshBtn.addEventListener('click', refreshStats);
   els.startEngineBtn.addEventListener('click', startEngine); els.welcomeStartEngine.addEventListener('click', startEngine);
@@ -1005,6 +1144,16 @@ function bindEvents() {
         try { await window.nexa.system.openExternal(url); }
         catch (error) { toast(error.message || String(error),'error'); }
       }
+      return;
+    }
+    const openImageButton = event.target.closest('[data-open-image]');
+    if (openImageButton) {
+      openImageLightbox(openImageButton.dataset.openImage, openImageButton.dataset.imageMeta || 'Vista grande');
+      return;
+    }
+    const downloadImageButton = event.target.closest('[data-download-image]');
+    if (downloadImageButton) {
+      await downloadImage(downloadImageButton.dataset.downloadImage);
       return;
     }
     const memoryButton = event.target.closest('[data-memory-message]');

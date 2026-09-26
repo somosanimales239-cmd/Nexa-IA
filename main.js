@@ -34,6 +34,8 @@ const DEFAULTS = Object.freeze({
   autoResearchOnMissing: true,
   webMaxSources: 5,
   researchBatchSize: 3,
+  comfyBaseUrl: 'http://127.0.0.1:8188',
+  comfyCheckpoint: '',
 });
 
 let mainWindow = null;
@@ -44,6 +46,7 @@ let browserBridge = null;
 let ollamaChild = null;
 const factoryWorkers = new Map();
 const activeRequests = new Map();
+const activeImageRequests = new Map();
 
 function id(prefix = 'id') {
   return `${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(5).toString('hex')}`;
@@ -152,6 +155,7 @@ class JsonStore {
       'model', 'baseUrl', 'ollamaExe', 'modelsPath', 'profile', 'lightGpuLayers',
       'contextLength', 'keepAlive', 'autoUnityMode', 'includeMemories', 'includeKnowledge',
       'knowledgeMaxChunks', 'knowledgeMaxChars', 'internetResearchEnabled', 'autoResearchOnMissing', 'webMaxSources', 'researchBatchSize',
+      'comfyBaseUrl', 'comfyCheckpoint',
     ];
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(patch || {}, key)) this.state.settings[key] = patch[key];
@@ -181,8 +185,18 @@ class JsonStore {
       messages: Array.isArray(chat.messages) ? chat.messages.map(m => ({
         id: String(m.id || id('msg')),
         role: ['user', 'assistant', 'system'].includes(m.role) ? m.role : 'user',
+        kind: m.kind === 'image' ? 'image' : 'text',
         content: String(m.content || ''),
         createdAt: m.createdAt || now,
+        image: m && typeof m.image === 'object' && m.image ? {
+          path: String(m.image.path || ''),
+          fileName: String(m.image.fileName || ''),
+          width: Number(m.image.width || 0) || null,
+          height: Number(m.image.height || 0) || null,
+          style: String(m.image.style || ''),
+          positivePrompt: String(m.image.positivePrompt || ''),
+          negativePrompt: String(m.image.negativePrompt || ''),
+        } : null,
         sources: Array.isArray(m.sources) ? m.sources.slice(0, 20).map(source => ({
           libraryId: String(source.libraryId || ''),
           libraryName: String(source.libraryName || ''),
@@ -625,6 +639,365 @@ function requestJson(method, urlString, body, timeoutMs = 8000) {
     if (payload) req.write(payload);
     req.end();
   });
+}
+
+
+function requestTransport(url) {
+  return url.protocol === 'https:' ? https : http;
+}
+
+function requestJsonUrl(method, urlString, body, timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlString);
+    const payload = body === undefined ? null : Buffer.from(JSON.stringify(body));
+    const req = requestTransport(url).request({
+      method,
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: `${url.pathname}${url.search}`,
+      timeout: timeoutMs,
+      headers: payload ? { 'Content-Type': 'application/json', 'Content-Length': payload.length } : {},
+    }, res => {
+      let text = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { text += chunk; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode}: ${text.slice(0, 800)}`));
+          return;
+        }
+        if (!text.trim()) return resolve({});
+        try { resolve(JSON.parse(text)); }
+        catch (error) { reject(new Error(`Respuesta JSON inválida: ${error.message}`)); }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Tiempo de espera agotado.')));
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+function requestBufferUrl(method, urlString, body, timeoutMs = 120000) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlString);
+    const payload = body === undefined || body === null
+      ? null
+      : (Buffer.isBuffer(body) ? body : Buffer.from(JSON.stringify(body)));
+    const headers = {};
+    if (payload) {
+      headers['Content-Length'] = payload.length;
+      if (!Buffer.isBuffer(body)) headers['Content-Type'] = 'application/json';
+    }
+    const req = requestTransport(url).request({
+      method,
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: `${url.pathname}${url.search}`,
+      timeout: timeoutMs,
+      headers,
+    }, res => {
+      const chunks = [];
+      res.on('data', chunk => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+      res.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode}: ${buffer.toString('utf8').slice(0, 800)}`));
+          return;
+        }
+        resolve(buffer);
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('Tiempo de espera agotado.')));
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+function normalizeImagePromptText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function extractFirstJsonObject(raw) {
+  const text = String(raw || '').trim();
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenceMatch ? fenceMatch[1].trim() : text;
+  const start = candidate.indexOf('{');
+  const end = candidate.lastIndexOf('}');
+  if (start >= 0 && end > start) return candidate.slice(start, end + 1);
+  return candidate;
+}
+
+function clampDimension(value, fallback) {
+  let n = Number(value || fallback) || fallback;
+  n = Math.max(512, Math.min(1536, Math.round(n / 64) * 64));
+  return n;
+}
+
+function inferImageStyle(userRequest) {
+  const text = String(userRequest || '').toLowerCase();
+  if (/anime|manga|waifu|studio ghibli|cartoon/.test(text)) return 'anime';
+  if (/3d|render 3d|cgi|octane/.test(text)) return '3d';
+  if (/illustration|illustrated|comic|vector|drawing|dibujo|ilustraci/.test(text)) return 'illustration';
+  if (/cinematic|movie|film/i.test(userRequest || '')) return 'cinematic';
+  if (/logo|icon|sticker|mascot/.test(text)) return 'graphic';
+  return 'photorealistic';
+}
+
+function inferImageDimensions(userRequest, style) {
+  const text = String(userRequest || '').toLowerCase();
+  if (/landscape|panorama|banner|wide|horizontal|coche|carro|car|auto|truck|room|habitaci|interior|beach|playa|city|ciudad/.test(text)) {
+    return { width: 1216, height: 832 };
+  }
+  if (/portrait|vertical|full body|cuerpo completo|persona completa|de pies a cabeza|headshot|retrato|fashion/.test(text)) {
+    return { width: 832, height: 1216 };
+  }
+  if (style === 'graphic' || /logo|icon/.test(text)) return { width: 1024, height: 1024 };
+  return { width: 1024, height: 1024 };
+}
+
+function fallbackNegativePrompt(style) {
+  if (style === 'anime') return 'low quality, blurry, extra fingers, extra limbs, bad anatomy, malformed hands, deformed face, duplicate, cropped, watermark, text, logo';
+  if (style === 'graphic') return 'blurry, low quality, noisy, distorted, extra objects, watermark, text artifacts, messy composition';
+  return 'blurry, low quality, low resolution, bad anatomy, deformed hands, extra fingers, extra limbs, malformed face, duplicate, cropped, watermark, logo, text, oversaturated, noisy background';
+}
+
+function fallbackPositivePrompt(userRequest, style) {
+  const clean = normalizeImagePromptText(userRequest);
+  const prefix = {
+    photorealistic: 'masterpiece, highly detailed, photorealistic image',
+    cinematic: 'masterpiece, cinematic, dramatic lighting, highly detailed image',
+    anime: 'masterpiece, high quality anime illustration',
+    illustration: 'high quality detailed illustration',
+    graphic: 'clean graphic design image',
+    '3d': 'high quality 3D render',
+  }[style] || 'high quality detailed image';
+  return `${prefix}, ${clean}`;
+}
+
+function fallbackImagePlan(userRequest) {
+  const style = inferImageStyle(userRequest);
+  const dimensions = inferImageDimensions(userRequest, style);
+  const steps = style === 'graphic' ? 24 : 30;
+  const cfg = style === 'photorealistic' || style === 'cinematic' ? 6.5 : 7;
+  return {
+    positive_prompt: fallbackPositivePrompt(userRequest, style),
+    negative_prompt: fallbackNegativePrompt(style),
+    style,
+    width: dimensions.width,
+    height: dimensions.height,
+    steps,
+    cfg,
+    sampler_name: 'euler',
+    scheduler: 'normal',
+    explanation: 'Plan generado por reglas internas de Nexa.',
+  };
+}
+
+function sanitizeImagePlan(rawPlan, userRequest) {
+  const fallback = fallbackImagePlan(userRequest);
+  const style = String(rawPlan?.style || fallback.style || 'photorealistic').trim() || fallback.style;
+  return {
+    positive_prompt: normalizeImagePromptText(rawPlan?.positive_prompt || rawPlan?.positivePrompt || fallback.positive_prompt),
+    negative_prompt: normalizeImagePromptText(rawPlan?.negative_prompt || rawPlan?.negativePrompt || fallback.negative_prompt),
+    style,
+    width: clampDimension(rawPlan?.width, fallback.width),
+    height: clampDimension(rawPlan?.height, fallback.height),
+    steps: Math.max(12, Math.min(60, Number(rawPlan?.steps || fallback.steps) || fallback.steps)),
+    cfg: Math.max(2, Math.min(12, Number(rawPlan?.cfg || rawPlan?.cfg_scale || fallback.cfg) || fallback.cfg)),
+    sampler_name: String(rawPlan?.sampler_name || rawPlan?.sampler || fallback.sampler_name || 'euler'),
+    scheduler: String(rawPlan?.scheduler || fallback.scheduler || 'normal'),
+    explanation: String(rawPlan?.explanation || fallback.explanation || ''),
+  };
+}
+
+async function buildImagePlanWithOllama(userRequest) {
+  const settings = store.state.settings;
+  try {
+    const status = await ollamaStatus();
+    if (!status.online || !status.modelInstalled) return fallbackImagePlan(userRequest);
+    const options = { num_ctx: Math.min(4096, Number(settings.contextLength) || 4096) };
+    if (settings.profile === 'light') options.num_gpu = Number(settings.lightGpuLayers) || 0;
+    const response = await requestJson('POST', `${settings.baseUrl}/api/chat`, {
+      model: settings.model,
+      stream: false,
+      keep_alive: settings.keepAlive,
+      options,
+      messages: [
+        {
+          role: 'system',
+          content: [
+            'You are Nexa Image Planner.',
+            'Turn the user image request into a single JSON object only.',
+            'Do not add markdown fences.',
+            'Return exactly these keys: positive_prompt, negative_prompt, style, width, height, steps, cfg, sampler_name, scheduler, explanation.',
+            'Default style to photorealistic unless the user asks for another style.',
+            'Pick portrait dimensions for full-body people, landscape dimensions for scenery/cars/rooms, square for general or product images.',
+            'The positive prompt should be detailed and production-ready for image generation.',
+            'The negative prompt should improve quality and avoid common artifacts.',
+          ].join(' '),
+        },
+        { role: 'user', content: String(userRequest || '') },
+      ],
+    }, 120000);
+    const content = response?.message?.content || '';
+    const json = JSON.parse(extractFirstJsonObject(content));
+    return sanitizeImagePlan(json, userRequest);
+  } catch (_) {
+    return fallbackImagePlan(userRequest);
+  }
+}
+
+function generatedImagesDirectory() {
+  const dir = path.join(store.dir, 'generated-images');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+async function resolveComfyCheckpoint(baseUrl) {
+  const configured = String(store.state.settings.comfyCheckpoint || '').trim();
+  if (configured) return configured;
+  const attempts = [
+    `${baseUrl.replace(/\/$/, '')}/object_info/CheckpointLoaderSimple`,
+    `${baseUrl.replace(/\/$/, '')}/object_info`,
+  ];
+  for (const endpoint of attempts) {
+    try {
+      const info = await requestJsonUrl('GET', endpoint, undefined, 6000);
+      const node = info?.CheckpointLoaderSimple || info;
+      const choices = node?.input?.required?.ckpt_name?.[0] || node?.input?.required?.ckpt_name || [];
+      if (Array.isArray(choices) && choices.length) return String(choices[0]);
+    } catch (_) {}
+  }
+  throw new Error('No pude detectar un checkpoint de ComfyUI. Ve a Ajustes y escribe el nombre del checkpoint en “Checkpoint ComfyUI”.');
+}
+
+function buildComfyWorkflow(plan, checkpoint) {
+  return {
+    '3': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: checkpoint } },
+    '4': { class_type: 'CLIPTextEncode', inputs: { text: plan.positive_prompt, clip: ['3', 1] } },
+    '5': { class_type: 'CLIPTextEncode', inputs: { text: plan.negative_prompt, clip: ['3', 1] } },
+    '6': { class_type: 'EmptyLatentImage', inputs: { width: plan.width, height: plan.height, batch_size: 1 } },
+    '7': {
+      class_type: 'KSampler',
+      inputs: {
+        seed: Math.floor(Math.random() * 9007199254740991),
+        steps: plan.steps,
+        cfg: plan.cfg,
+        sampler_name: plan.sampler_name || 'euler',
+        scheduler: plan.scheduler || 'normal',
+        denoise: 1,
+        model: ['3', 0],
+        positive: ['4', 0],
+        negative: ['5', 0],
+        latent_image: ['6', 0],
+      },
+    },
+    '8': { class_type: 'VAEDecode', inputs: { samples: ['7', 0], vae: ['3', 2] } },
+    '9': { class_type: 'SaveImage', inputs: { filename_prefix: 'NexaAI', images: ['8', 0] } },
+  };
+}
+
+function collectComfyImages(historyEntry) {
+  const outputs = historyEntry?.outputs || {};
+  const images = [];
+  for (const node of Object.values(outputs)) {
+    if (Array.isArray(node?.images)) images.push(...node.images);
+  }
+  return images;
+}
+
+async function queueComfyPrompt(baseUrl, workflow, clientId) {
+  const response = await requestJsonUrl('POST', `${baseUrl.replace(/\/$/, '')}/prompt`, { prompt: workflow, client_id: clientId }, 15000);
+  if (!response?.prompt_id) throw new Error('ComfyUI no devolvió prompt_id.');
+  return response.prompt_id;
+}
+
+async function waitForComfyResult(baseUrl, promptId, requestId, timeoutMs = 300000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const job = activeImageRequests.get(requestId);
+    if (job?.cancelled) throw new Error('Generación detenida por el usuario.');
+    const history = await requestJsonUrl('GET', `${baseUrl.replace(/\/$/, '')}/history/${encodeURIComponent(promptId)}`, undefined, 20000);
+    const entry = history?.[promptId] || history;
+    const images = collectComfyImages(entry);
+    if (images.length) return images;
+    const statusText = String(entry?.status?.status_str || '').toLowerCase();
+    if (statusText === 'error') {
+      const message = Array.isArray(entry?.status?.messages) ? entry.status.messages.map(item => Array.isArray(item) ? item.join(' ') : String(item)).join(' ') : 'ComfyUI reportó un error.';
+      throw new Error(message);
+    }
+    await sleep(1400);
+  }
+  throw new Error('ComfyUI tardó demasiado en generar la imagen.');
+}
+
+async function copyComfyImageToNexa(baseUrl, imageMeta, requestId, plan) {
+  const query = new URLSearchParams({ filename: String(imageMeta.filename || ''), subfolder: String(imageMeta.subfolder || ''), type: String(imageMeta.type || 'output') });
+  const buffer = await requestBufferUrl('GET', `${baseUrl.replace(/\/$/, '')}/view?${query.toString()}`, undefined, 120000);
+  const ext = path.extname(String(imageMeta.filename || '')).toLowerCase() || '.png';
+  const fileName = `${requestId}${ext}`;
+  const fullPath = path.join(generatedImagesDirectory(), fileName);
+  fs.writeFileSync(fullPath, buffer);
+  return {
+    path: fullPath,
+    fileName,
+    width: plan.width,
+    height: plan.height,
+    style: plan.style,
+    positivePrompt: plan.positive_prompt,
+    negativePrompt: plan.negative_prompt,
+  };
+}
+
+async function generateImage(payload) {
+  const requestId = String(payload?.requestId || id('img'));
+  const userRequest = String(payload?.userRequest || '').trim();
+  if (!userRequest) throw new Error('La solicitud de imagen está vacía.');
+  const baseUrl = String(store.state.settings.comfyBaseUrl || 'http://127.0.0.1:8188').trim() || 'http://127.0.0.1:8188';
+  const job = { requestId, baseUrl, promptId: null, cancelled: false };
+  activeImageRequests.set(requestId, job);
+  try {
+    const plan = await buildImagePlanWithOllama(userRequest);
+    const checkpoint = await resolveComfyCheckpoint(baseUrl);
+    const workflow = buildComfyWorkflow(plan, checkpoint);
+    const promptId = await queueComfyPrompt(baseUrl, workflow, `nexa-${requestId}`);
+    job.promptId = promptId;
+    const images = await waitForComfyResult(baseUrl, promptId, requestId);
+    const saved = await copyComfyImageToNexa(baseUrl, images[0], requestId, plan);
+    return {
+      ok: true,
+      requestId,
+      image: saved,
+      plan,
+      summary: `Imagen generada (${saved.width}×${saved.height}, estilo ${saved.style}).`,
+    };
+  } finally {
+    activeImageRequests.delete(requestId);
+  }
+}
+
+async function stopImageGeneration(requestId) {
+  const job = activeImageRequests.get(String(requestId));
+  if (!job) return false;
+  job.cancelled = true;
+  try { await requestJsonUrl('POST', `${job.baseUrl.replace(/\/$/, '')}/interrupt`, {}, 5000).catch(() => null); }
+  catch (_) {}
+  return true;
+}
+
+async function saveImageAs(filePath) {
+  const source = String(filePath || '').trim();
+  if (!source || !fs.existsSync(source)) throw new Error('La imagen no existe en disco.');
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Guardar imagen generada',
+    defaultPath: path.basename(source),
+    filters: [{ name: 'Imagen', extensions: [path.extname(source).replace(/^\./, '') || 'png'] }],
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  fs.copyFileSync(source, result.filePath);
+  return { ok: true, path: result.filePath };
 }
 
 async function ollamaStatus() {
@@ -1351,31 +1724,15 @@ async function streamChat(event, payload) {
   const persistent = persistentKnowledgeSystemPrompt(lastUser, objectiveIds);
   const groundingPolicy = responseGroundingPolicy(persistent.sources.length, knowledge.sources.length);
   const systemParts = [groundingPolicy, memories, persistent.prompt, knowledge.prompt].filter(Boolean);
-  // NEXA_CHAT_COMPLETION_FIX_V1
-  // Keep enough recent conversation for continuity while reserving room for the
-  // answer itself. Knowledge and memories are already injected separately.
-  const clipped = sourceMessages.slice(-8).map(message => ({
-    role: message.role,
-    content: String(message.content || ''),
-  }));
+  const clipped = sourceMessages.slice(-36).map(message => ({ role: message.role, content: String(message.content || '') }));
   const messages = systemParts.length ? [{ role: 'system', content: systemParts.join('\n\n') }, ...clipped] : clipped;
-  const effectiveContextLength = Math.max(12288, Number(settings.contextLength) || 4096);
-  const options = { num_ctx: effectiveContextLength, num_predict: 4096 };
+  const options = { num_ctx: Number(settings.contextLength) || 4096 };
   if (settings.profile === 'light') options.num_gpu = Number(settings.lightGpuLayers) || 0;
 
   const combinedSources = [...persistent.sources, ...knowledge.sources];
   if (combinedSources.length) event.sender.send('chat:context', { requestId, sources: combinedSources });
 
-  // GPT-OSS can stream internal reasoning separately from message.content.
-  // Nexa's normal chat should spend the generation budget on the visible answer.
-  const body = Buffer.from(JSON.stringify({
-    model: settings.model,
-    messages,
-    stream: true,
-    think: false,
-    keep_alive: settings.keepAlive,
-    options,
-  }));
+  const body = Buffer.from(JSON.stringify({ model: settings.model, messages, stream: true, keep_alive: settings.keepAlive, options }));
   const req = http.request({
     method: 'POST', hostname: url.hostname, port: url.port || 80, path: url.pathname,
     headers: { 'Content-Type': 'application/json', 'Content-Length': body.length },
@@ -1559,6 +1916,9 @@ function registerIpc() {
     req.destroy(new Error('Generación detenida por el usuario.'));
     return true;
   });
+  ipcMain.handle('image:generate', (_event, payload) => generateImage(payload || {}));
+  ipcMain.handle('image:stop', (_event, requestId) => stopImageGeneration(requestId));
+  ipcMain.handle('image:save-as', (_event, filePath) => saveImageAs(filePath));
 
   ipcMain.handle('knowledge:list', () => knowledgeStore.summary());
   ipcMain.handle('knowledge:create', (_event, input) => knowledgeStore.createLibrary(input || {}));
@@ -1626,6 +1986,8 @@ app.on('before-quit', () => {
   for (const worker of factoryWorkers.values()) worker.stopRequested = true;
   for (const req of activeRequests.values()) { try { req.destroy(); } catch (_) {} }
   activeRequests.clear();
+  for (const job of activeImageRequests.values()) job.cancelled = true;
+  activeImageRequests.clear();
   if (browserBridge) browserBridge.stop().catch(() => {});
   if (knowledgeDb) knowledgeDb.close();
 });

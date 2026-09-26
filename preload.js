@@ -47,6 +47,11 @@ contextBridge.exposeInMainWorld('nexa', {
     onError: callback => on('chat:error', callback),
     onContext: callback => on('chat:context', callback),
   }),
+  images: Object.freeze({
+    generate: payload => ipcRenderer.invoke('image:generate', payload),
+    stop: requestId => ipcRenderer.invoke('image:stop', requestId),
+    saveAs: filePath => ipcRenderer.invoke('image:save-as', filePath),
+  }),
   knowledge: Object.freeze({
     list: () => ipcRenderer.invoke('knowledge:list'),
     create: input => ipcRenderer.invoke('knowledge:create', input),
