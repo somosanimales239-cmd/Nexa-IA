@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('nexa', {
     generate: payload => ipcRenderer.invoke('image:generate', payload),
     stop: requestId => ipcRenderer.invoke('image:stop', requestId),
     saveAs: filePath => ipcRenderer.invoke('image:save-as', filePath),
+    onProgress: callback => on('image:progress', callback),
   }),
   knowledge: Object.freeze({
     list: () => ipcRenderer.invoke('knowledge:list'),

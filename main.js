@@ -678,6 +678,57 @@ function requestJsonUrl(method, urlString, body, timeoutMs = 8000) {
   });
 }
 
+
+function requestJsonTracked(method, urlString, body, timeoutMs, job, slot = 'request') {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlString);
+    const payload = body === undefined ? null : Buffer.from(JSON.stringify(body));
+    const req = requestTransport(url).request({
+      method,
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: `${url.pathname}${url.search}`,
+      timeout: timeoutMs,
+      headers: payload ? { 'Content-Type': 'application/json', 'Content-Length': payload.length } : {},
+    }, res => {
+      let raw = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { raw += chunk; });
+      res.on('end', () => {
+        if (job && job[slot] === req) job[slot] = null;
+        if (job?.cancelled) return reject(new Error('Generación detenida por el usuario.'));
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode}: ${raw.slice(0, 800)}`));
+          return;
+        }
+        if (!raw.trim()) return resolve({});
+        try { resolve(JSON.parse(raw)); }
+        catch (error) { reject(new Error(`Respuesta JSON inválida: ${error.message}`)); }
+      });
+    });
+    if (job) job[slot] = req;
+    req.on('timeout', () => req.destroy(new Error('Tiempo de espera agotado.')));
+    req.on('error', error => {
+      if (job && job[slot] === req) job[slot] = null;
+      reject(job?.cancelled ? new Error('Generación detenida por el usuario.') : error);
+    });
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+function imageProgress(event, requestId, phase, label, extra = {}) {
+  try {
+    if (event?.sender && !event.sender.isDestroyed()) {
+      event.sender.send('image:progress', { requestId, phase, label, ...extra });
+    }
+  } catch (_) {}
+}
+
+function ensureImageJobActive(job) {
+  if (job?.cancelled) throw new Error('Generación detenida por el usuario.');
+}
+
 function requestBufferUrl(method, urlString, body, timeoutMs = 120000) {
   return new Promise((resolve, reject) => {
     const url = new URL(urlString);
@@ -868,27 +919,27 @@ function inferImageDimensions(userRequest, style) {
   if (explicit) return explicit;
   const text = String(userRequest || '').toLowerCase();
   if (/square|cuadrad/.test(text)) return { width: 1024, height: 1024 };
-  if (/9:16|story|vertical largo/.test(text)) return { width: 704, height: 1216 };
-  if (/16:9|wallpaper|panorama|banner|wide/.test(text)) return { width: 1216, height: 704 };
+  if (/9:16|story|vertical largo/.test(text)) return { width: 576, height: 1024 };
+  if (/16:9|wallpaper|panorama|banner|wide/.test(text)) return { width: 1024, height: 576 };
   if (/portrait|vertical|full body|cuerpo completo|persona completa|de pies a cabeza|headshot|retrato|fashion/.test(text)) {
-    return { width: 832, height: 1216 };
+    return { width: 768, height: 1024 };
   }
   if (/landscape|horizontal|coche|carro|car|auto|truck|room|habitaci|interior|beach|playa|city|ciudad|mountain|monta/.test(text)) {
-    return { width: 1216, height: 832 };
+    return { width: 1024, height: 768 };
   }
-  if (style === 'graphic') return { width: 1024, height: 1024 };
-  return { width: 1024, height: 1024 };
+  if (style === 'graphic') return { width: 896, height: 896 };
+  return { width: 896, height: 896 };
 }
 
 function imageQualityPreset(style, userRequest) {
   const dimensions = inferImageDimensions(userRequest, style);
   const presets = {
-    photorealistic: { steps: 32, cfg: 5.5, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
-    cinematic: { steps: 32, cfg: 6.0, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
-    illustration: { steps: 32, cfg: 6.5, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
-    anime: { steps: 30, cfg: 6.0, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
-    graphic: { steps: 28, cfg: 5.5, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
-    '3d': { steps: 32, cfg: 6.0, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
+    photorealistic: { steps: 28, cfg: 5.5, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
+    cinematic: { steps: 30, cfg: 6.0, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
+    illustration: { steps: 28, cfg: 6.0, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
+    anime: { steps: 26, cfg: 6.0, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
+    graphic: { steps: 24, cfg: 5.5, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
+    '3d': { steps: 28, cfg: 6.0, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
   };
   return { ...dimensions, ...(presets[style] || presets.photorealistic) };
 }
@@ -984,16 +1035,18 @@ function sanitizeImagePlan(rawPlan, userRequest) {
   };
 }
 
-async function buildImagePlanWithOllama(userRequest) {
+async function buildImagePlanWithOllama(userRequest, job) {
   const settings = store.state.settings;
   try {
     const status = await ollamaStatus();
     if (!status.online || !status.modelInstalled) return fallbackImagePlan(userRequest);
-    const options = { num_ctx: Math.min(4096, Number(settings.contextLength) || 4096) };
+    ensureImageJobActive(job);
+    const options = { num_ctx: Math.min(4096, Number(settings.contextLength) || 4096), num_predict: 500 };
     if (settings.profile === 'light') options.num_gpu = Number(settings.lightGpuLayers) || 0;
-    const response = await requestJson('POST', `${settings.baseUrl}/api/chat`, {
+    const response = await requestJsonTracked('POST', `${settings.baseUrl}/api/chat`, {
       model: settings.model,
       stream: false,
+      think: false,
       keep_alive: settings.keepAlive,
       options,
       messages: [
@@ -1012,11 +1065,13 @@ async function buildImagePlanWithOllama(userRequest) {
         },
         { role: 'user', content: String(userRequest || '') },
       ],
-    }, 120000);
+    }, 60000, job, 'plannerRequest');
+    ensureImageJobActive(job);
     const content = response?.message?.content || '';
     const json = JSON.parse(extractFirstJsonObject(content));
     return sanitizeImagePlan(json, userRequest);
-  } catch (_) {
+  } catch (error) {
+    if (job?.cancelled) throw new Error('Generación detenida por el usuario.');
     return fallbackImagePlan(userRequest);
   }
 }
@@ -1123,24 +1178,44 @@ async function copyComfyImageToNexa(baseUrl, imageMeta, requestId, plan) {
   };
 }
 
-async function generateImage(payload) {
+async function generateImage(event, payload) {
   const requestId = String(payload?.requestId || id('img'));
   const userRequest = String(payload?.userRequest || '').trim();
   if (!userRequest) throw new Error('La solicitud de imagen está vacía.');
   const baseUrl = String(store.state.settings.comfyBaseUrl || 'http://127.0.0.1:8188').trim() || 'http://127.0.0.1:8188';
-  const job = { requestId, baseUrl, promptId: null, cancelled: false };
+  const job = { requestId, baseUrl, promptId: null, cancelled: false, plannerRequest: null };
   activeImageRequests.set(requestId, job);
   try {
-    const draftPlan = await buildImagePlanWithOllama(userRequest);
+    imageProgress(event, requestId, 'planning', 'Preparando el prompt de la imagen…');
+    const draftPlan = await buildImagePlanWithOllama(userRequest, job);
+    ensureImageJobActive(job);
+
+    imageProgress(event, requestId, 'freeing-vram', 'Liberando la GPU para ComfyUI…');
+    await unloadModel().catch(() => null);
+    ensureImageJobActive(job);
+    await sleep(700);
+
+    imageProgress(event, requestId, 'connecting', 'Conectando con ComfyUI…');
     const checkpoint = await resolveComfyCheckpoint(baseUrl);
+    ensureImageJobActive(job);
     const comfyOptions = await getComfyKSamplerOptions(baseUrl);
+    ensureImageJobActive(job);
     const plan = normalizeComfyPlan(draftPlan, comfyOptions);
     const workflow = buildComfyWorkflow(plan, checkpoint);
+
+    imageProgress(event, requestId, 'queueing', 'Enviando el trabajo a ComfyUI…', { width: plan.width, height: plan.height, steps: plan.steps });
     const promptId = await queueComfyPrompt(baseUrl, workflow, `nexa-${requestId}`);
     job.promptId = promptId;
-    if (job.cancelled) throw new Error('Generación detenida por el usuario.');
+    ensureImageJobActive(job);
+
+    imageProgress(event, requestId, 'rendering', `Renderizando ${plan.width}×${plan.height} · ${plan.steps} pasos…`, { width: plan.width, height: plan.height, steps: plan.steps });
     const images = await waitForComfyResult(baseUrl, promptId, requestId);
+    ensureImageJobActive(job);
+
+    imageProgress(event, requestId, 'saving', 'Guardando la imagen en Nexa…');
     const saved = await copyComfyImageToNexa(baseUrl, images[0], requestId, plan);
+    ensureImageJobActive(job);
+    imageProgress(event, requestId, 'done', 'Imagen terminada.', { width: saved.width, height: saved.height });
     return {
       ok: true,
       requestId,
@@ -1149,6 +1224,11 @@ async function generateImage(payload) {
       summary: `Imagen generada (${saved.width}×${saved.height}, estilo ${saved.style}).`,
     };
   } finally {
+    const current = activeImageRequests.get(requestId);
+    if (current?.plannerRequest) {
+      try { current.plannerRequest.destroy(new Error('Generación finalizada.')); } catch (_) {}
+      current.plannerRequest = null;
+    }
     activeImageRequests.delete(requestId);
   }
 }
@@ -1157,6 +1237,10 @@ async function stopImageGeneration(requestId) {
   const job = activeImageRequests.get(String(requestId));
   if (!job) return false;
   job.cancelled = true;
+  if (job.plannerRequest) {
+    try { job.plannerRequest.destroy(new Error('Generación detenida por el usuario.')); } catch (_) {}
+    job.plannerRequest = null;
+  }
   const cleanBase = job.baseUrl.replace(/\/$/, '');
   try {
     if (job.promptId) await requestJsonUrl('POST', `${cleanBase}/queue`, { delete: [job.promptId] }, 5000).catch(() => null);
@@ -2095,7 +2179,7 @@ function registerIpc() {
     req.destroy(new Error('Generación detenida por el usuario.'));
     return true;
   });
-  ipcMain.handle('image:generate', (_event, payload) => generateImage(payload || {}));
+  ipcMain.handle('image:generate', (event, payload) => generateImage(event, payload || {}));
   ipcMain.handle('image:stop', (_event, requestId) => stopImageGeneration(requestId));
   ipcMain.handle('image:save-as', (_event, filePath) => saveImageAs(filePath));
 

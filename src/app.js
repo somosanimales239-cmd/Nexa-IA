@@ -421,10 +421,9 @@ function attachSources(sources) {
 function setGenerating(active, mode = null) {
   state.activeRequestMode = active ? (mode || state.activeRequestMode || 'text') : null;
   els.generationBanner.hidden = !active;
-  els.generationBanner.style.display = active ? 'flex' : 'none';
   if (active) {
     const imageMode = state.activeRequestMode === 'image';
-    els.generationBannerLabel.textContent = imageMode ? 'Nexa está generando una imagen…' : 'Nexa está escribiendo…';
+    els.generationBannerLabel.textContent = imageMode ? 'Preparando generación de imagen…' : 'Nexa está escribiendo…';
     els.generationBannerVisual.className = 'banner-loader ' + (imageMode ? 'image-loader' : 'text-loader');
     els.generationBannerVisual.innerHTML = imageMode
       ? ''
@@ -439,24 +438,35 @@ function setGenerating(active, mode = null) {
   if (!active) els.promptInput.focus();
 }
 
+function updateImageProgress(label) {
+  if (state.activeRequestMode !== 'image') return;
+  const clean = String(label || '').trim();
+  if (clean) els.generationBannerLabel.textContent = clean;
+  const inline = els.messages?.querySelector('.image-loader-copy small');
+  if (inline && clean) inline.textContent = clean;
+}
+
 async function sendMessage() {
   const text = els.promptInput.value.trim();
   if (!text || state.activeRequestId) return;
   const chat = ensureChat();
   const wantsImage = looksLikeImageRequest(text);
+  const requestId = uid('req');
   const now = new Date().toISOString();
+
   chat.messages.push({ id:uid('msg'), role:'user', kind:'text', content:text, createdAt:now, sources:[] });
   autoTitle(chat);
   chat.messages.push({ id:uid('msg'), role:'assistant', kind:wantsImage ? 'image' : 'text', content:'', image:null, createdAt:new Date().toISOString(), sources:[] });
+
+  state.activeRequestId = requestId;
   state.activeAssistantMessageId = chat.messages[chat.messages.length - 1].id;
   els.promptInput.value = '';
-  resizePrompt(); renderCurrentChat();
-  await persistChat(chat);
-
-  const requestId = uid('req');
-  state.activeRequestId = requestId;
+  resizePrompt();
   setGenerating(true, wantsImage ? 'image' : 'text');
+  renderCurrentChat();
+
   try {
+    await persistChat(chat);
     if (wantsImage) {
       const result = await window.nexa.images.generate({ requestId, userRequest:text });
       if (!result?.ok || !result?.image?.path) throw new Error(result?.error || 'No se pudo generar la imagen.');
@@ -466,9 +476,11 @@ async function sendMessage() {
         assistant.content = result.summary || 'Aquí tienes la imagen.';
         assistant.image = result.image;
       }
-      state.activeRequestId = null;
-      state.activeAssistantMessageId = null;
-      setGenerating(false);
+      if (state.activeRequestId === requestId) {
+        state.activeRequestId = null;
+        state.activeAssistantMessageId = null;
+        setGenerating(false);
+      }
       renderCurrentChat();
       await persistChat(chat);
       toast('Imagen generada en ComfyUI.','success');
@@ -485,7 +497,15 @@ async function sendMessage() {
     if (Array.isArray(result.sources) && result.sources.length) attachSources(result.sources);
   } catch (error) {
     const message = error.message || String(error);
-    if (wantsImage && String(message).toLowerCase().includes('detenida por el usuario')) return;
+    if (wantsImage && String(message).toLowerCase().includes('detenida por el usuario')) {
+      if (state.activeRequestId === requestId) {
+        state.activeRequestId = null;
+        state.activeAssistantMessageId = null;
+        setGenerating(false);
+        renderCurrentChat();
+      }
+      return;
+    }
     finishWithError(message);
   }
 }
@@ -1294,6 +1314,10 @@ function bindEvents() {
   window.nexa.chat.onContext(packet => { if (packet.requestId === state.activeRequestId) attachSources(packet.sources || []); });
   window.nexa.chat.onDone(packet => { if (packet.requestId === state.activeRequestId) finishGeneration(packet.stats).catch(error => finishWithError(error.message)); });
   window.nexa.chat.onError(packet => { if (packet.requestId === state.activeRequestId) finishWithError(packet.error || 'Error de generación.'); });
+  if (window.nexa.images?.onProgress) window.nexa.images.onProgress(packet => {
+    if (packet.requestId !== state.activeRequestId || state.activeRequestMode !== 'image') return;
+    updateImageProgress(packet.label || 'Generando imagen…');
+  });
   window.nexa.research.onProgress(packet => {
     els.researchProgress.hidden = false;
     if (packet.phase === 'search') { els.researchProgressText.textContent = 'Buscando fuentes: ' + (packet.topic || ''); els.researchProgressState.textContent = 'SEARCH'; }
