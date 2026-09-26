@@ -933,13 +933,15 @@ function inferImageDimensions(userRequest, style) {
 
 function imageQualityPreset(style, userRequest) {
   const dimensions = inferImageDimensions(userRequest, style);
+  // Stable values verified with the local SDXL workflow. Keep technical
+  // parameters deterministic; only prompts/style/size are inferred.
   const presets = {
-    photorealistic: { steps: 28, cfg: 5.5, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
-    cinematic: { steps: 30, cfg: 6.0, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
-    illustration: { steps: 28, cfg: 6.0, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
-    anime: { steps: 26, cfg: 6.0, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
-    graphic: { steps: 24, cfg: 5.5, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
-    '3d': { steps: 28, cfg: 6.0, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
+    photorealistic: { steps: 30, cfg: 5.5, sampler_name: 'euler', scheduler: 'normal' },
+    cinematic: { steps: 30, cfg: 6.0, sampler_name: 'euler', scheduler: 'normal' },
+    illustration: { steps: 30, cfg: 6.0, sampler_name: 'euler', scheduler: 'normal' },
+    anime: { steps: 28, cfg: 6.0, sampler_name: 'euler', scheduler: 'normal' },
+    graphic: { steps: 28, cfg: 5.5, sampler_name: 'euler', scheduler: 'normal' },
+    '3d': { steps: 30, cfg: 6.0, sampler_name: 'euler', scheduler: 'normal' },
   };
   return { ...dimensions, ...(presets[style] || presets.photorealistic) };
 }
@@ -1037,11 +1039,15 @@ function sanitizeImagePlan(rawPlan, userRequest) {
 
 async function buildImagePlanWithOllama(userRequest, job) {
   const settings = store.state.settings;
+  const fallback = fallbackImagePlan(userRequest);
   try {
     const status = await ollamaStatus();
-    if (!status.online || !status.modelInstalled) return fallbackImagePlan(userRequest);
+    // Never cold-load or reload gpt-oss just to create an image prompt. If it is
+    // not already resident, the deterministic planner below is good enough and
+    // ComfyUI can start immediately.
+    if (!status.online || !status.modelInstalled || !status.selectedRunning) return fallback;
     ensureImageJobActive(job);
-    const options = { num_ctx: Math.min(4096, Number(settings.contextLength) || 4096), num_predict: 500 };
+    const options = { num_ctx: Math.min(2048, Number(settings.contextLength) || 2048), num_predict: 280 };
     if (settings.profile === 'light') options.num_gpu = Number(settings.lightGpuLayers) || 0;
     const response = await requestJsonTracked('POST', `${settings.baseUrl}/api/chat`, {
       model: settings.model,
@@ -1054,25 +1060,21 @@ async function buildImagePlanWithOllama(userRequest, job) {
           role: 'system',
           content: [
             'You are Nexa Image Planner.',
-            'Turn the user image request into a single JSON object only.',
-            'Do not add markdown fences.',
-            'Return exactly these keys: positive_prompt, negative_prompt, style, explanation.',
-            'Default style to photorealistic unless the user asks for another style.',
-            'Focus on visual intent, composition, subject details, materials, lighting, and requested style. Nexa will choose technical image parameters separately.',
-            'The positive prompt should be detailed and production-ready for image generation.',
-            'The negative prompt should improve quality and avoid common artifacts.',
+            'Return one compact JSON object only, with positive_prompt, negative_prompt, style and explanation.',
+            'Preserve the user intent. Add useful visual details, composition and lighting, but do not invent unrelated subjects.',
+            'Nexa chooses all technical sampler, scheduler, steps, CFG and resolution values separately.',
           ].join(' '),
         },
         { role: 'user', content: String(userRequest || '') },
       ],
-    }, 60000, job, 'plannerRequest');
+    }, 15000, job, 'plannerRequest');
     ensureImageJobActive(job);
     const content = response?.message?.content || '';
     const json = JSON.parse(extractFirstJsonObject(content));
     return sanitizeImagePlan(json, userRequest);
   } catch (error) {
     if (job?.cancelled) throw new Error('Generación detenida por el usuario.');
-    return fallbackImagePlan(userRequest);
+    return fallback;
   }
 }
 
@@ -1178,6 +1180,17 @@ async function copyComfyImageToNexa(baseUrl, imageMeta, requestId, plan) {
   };
 }
 
+async function releaseComfyResources(baseUrl) {
+  const cleanBase = String(baseUrl || '').replace(/\/$/, '');
+  if (!cleanBase) return false;
+  try {
+    await requestJsonUrl('POST', `${cleanBase}/free`, { unload_models: true, free_memory: true }, 5000);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 async function generateImage(event, payload) {
   const requestId = String(payload?.requestId || id('img'));
   const userRequest = String(payload?.userRequest || '').trim();
@@ -1190,11 +1203,9 @@ async function generateImage(event, payload) {
     const draftPlan = await buildImagePlanWithOllama(userRequest, job);
     ensureImageJobActive(job);
 
-    imageProgress(event, requestId, 'freeing-vram', 'Liberando la GPU para ComfyUI…');
-    await unloadModel().catch(() => null);
-    ensureImageJobActive(job);
-    await sleep(700);
-
+    // Do not stop Ollama here. Build 102 proved SDXL can render while Nexa stays
+    // responsive; unloading gpt-oss made the next text reply cold-load the model
+    // again and looked like a frozen application.
     imageProgress(event, requestId, 'connecting', 'Conectando con ComfyUI…');
     const checkpoint = await resolveComfyCheckpoint(baseUrl);
     ensureImageJobActive(job);
@@ -1216,6 +1227,9 @@ async function generateImage(event, payload) {
     const saved = await copyComfyImageToNexa(baseUrl, images[0], requestId, plan);
     ensureImageJobActive(job);
     imageProgress(event, requestId, 'done', 'Imagen terminada.', { width: saved.width, height: saved.height });
+    // Once the file is safely copied into Nexa, release ComfyUI's cached models
+    // in the background so normal text chat gets the VRAM back immediately.
+    releaseComfyResources(baseUrl).catch(() => null);
     return {
       ok: true,
       requestId,
@@ -1243,10 +1257,13 @@ async function stopImageGeneration(requestId) {
   }
   const cleanBase = job.baseUrl.replace(/\/$/, '');
   try {
-    if (job.promptId) await requestJsonUrl('POST', `${cleanBase}/queue`, { delete: [job.promptId] }, 5000).catch(() => null);
+    if (job.promptId) await requestJsonUrl('POST', `${cleanBase}/queue`, { delete: [job.promptId] }, 3500).catch(() => null);
   } catch (_) {}
-  try { await requestJsonUrl('POST', `${cleanBase}/interrupt`, {}, 5000).catch(() => null); }
-  catch (_) {}
+  try {
+    const interruptBody = job.promptId ? { prompt_id: job.promptId } : {};
+    await requestJsonUrl('POST', `${cleanBase}/interrupt`, interruptBody, 3500).catch(() => null);
+  } catch (_) {}
+  releaseComfyResources(cleanBase).catch(() => null);
   return true;
 }
 

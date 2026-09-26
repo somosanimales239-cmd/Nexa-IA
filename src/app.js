@@ -421,6 +421,7 @@ function attachSources(sources) {
 function setGenerating(active, mode = null) {
   state.activeRequestMode = active ? (mode || state.activeRequestMode || 'text') : null;
   els.generationBanner.hidden = !active;
+  els.generationBanner.style.display = active ? 'flex' : 'none';
   if (active) {
     const imageMode = state.activeRequestMode === 'image';
     els.generationBannerLabel.textContent = imageMode ? 'Preparando generación de imagen…' : 'Nexa está escribiendo…';
@@ -446,6 +447,29 @@ function updateImageProgress(label) {
   if (inline && clean) inline.textContent = clean;
 }
 
+function invokeImageWithTimeout(requestId, payload, timeoutMs = 360000) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      if (window.nexa.images?.stop) window.nexa.images.stop(requestId).catch(() => {});
+      reject(new Error('La generación de imagen superó 6 minutos y fue detenida para evitar que Nexa quede bloqueado.'));
+    }, timeoutMs);
+    window.nexa.images.generate(payload).then(result => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(result);
+    }).catch(error => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(error);
+    });
+  });
+}
+
 async function sendMessage() {
   const text = els.promptInput.value.trim();
   if (!text || state.activeRequestId) return;
@@ -456,10 +480,12 @@ async function sendMessage() {
 
   chat.messages.push({ id:uid('msg'), role:'user', kind:'text', content:text, createdAt:now, sources:[] });
   autoTitle(chat);
-  chat.messages.push({ id:uid('msg'), role:'assistant', kind:wantsImage ? 'image' : 'text', content:'', image:null, createdAt:new Date().toISOString(), sources:[] });
+  const assistantMessage = { id:uid('msg'), role:'assistant', kind:wantsImage ? 'image' : 'text', content:'', image:null, createdAt:new Date().toISOString(), sources:[] };
+  chat.messages.push(assistantMessage);
+  const assistantMessageId = assistantMessage.id;
 
   state.activeRequestId = requestId;
-  state.activeAssistantMessageId = chat.messages[chat.messages.length - 1].id;
+  state.activeAssistantMessageId = assistantMessageId;
   els.promptInput.value = '';
   resizePrompt();
   setGenerating(true, wantsImage ? 'image' : 'text');
@@ -467,46 +493,55 @@ async function sendMessage() {
 
   try {
     await persistChat(chat);
-    if (wantsImage) {
-      const result = await window.nexa.images.generate({ requestId, userRequest:text });
+  } catch (error) {
+    if (state.activeRequestId === requestId) finishWithError(error.message || String(error));
+    return;
+  }
+
+  if (wantsImage) {
+    try {
+      const result = await invokeImageWithTimeout(requestId, { requestId, userRequest:text });
+      if (state.activeRequestId !== requestId) return;
       if (!result?.ok || !result?.image?.path) throw new Error(result?.error || 'No se pudo generar la imagen.');
-      const assistant = chat.messages.find(message => message.id === state.activeAssistantMessageId);
+      const assistant = chat.messages.find(message => message.id === assistantMessageId);
       if (assistant) {
         assistant.kind = 'image';
         assistant.content = result.summary || 'Aquí tienes la imagen.';
         assistant.image = result.image;
       }
-      if (state.activeRequestId === requestId) {
-        state.activeRequestId = null;
-        state.activeAssistantMessageId = null;
-        setGenerating(false);
-      }
-      renderCurrentChat();
       await persistChat(chat);
+      renderCurrentChat();
       toast('Imagen generada en ComfyUI.','success');
-      return;
-    }
-
-    const result = await window.nexa.chat.start({
-      requestId,
-      libraryIds: Array.isArray(chat.libraryIds) ? chat.libraryIds : [],
-      objectiveIds: Array.isArray(chat.objectiveIds) ? chat.objectiveIds : [],
-      messages: chat.messages.filter(message => message.id !== state.activeAssistantMessageId).map(message => ({ role:message.role, content:message.content })),
-    });
-    if (!result?.ok) throw new Error(result?.error || 'No se pudo iniciar la respuesta.');
-    if (Array.isArray(result.sources) && result.sources.length) attachSources(result.sources);
-  } catch (error) {
-    const message = error.message || String(error);
-    if (wantsImage && String(message).toLowerCase().includes('detenida por el usuario')) {
+    } catch (error) {
+      if (state.activeRequestId !== requestId) return;
+      const message = error.message || String(error);
+      const assistant = chat.messages.find(item => item.id === assistantMessageId);
+      if (assistant && !assistant.image?.path) assistant.content = `Error local: ${message}`;
+      await persistChat(chat).catch(() => {});
+      renderCurrentChat();
+      toast(message,'error');
+    } finally {
       if (state.activeRequestId === requestId) {
         state.activeRequestId = null;
         state.activeAssistantMessageId = null;
         setGenerating(false);
         renderCurrentChat();
       }
-      return;
     }
-    finishWithError(message);
+    return;
+  }
+
+  try {
+    const result = await window.nexa.chat.start({
+      requestId,
+      libraryIds: Array.isArray(chat.libraryIds) ? chat.libraryIds : [],
+      objectiveIds: Array.isArray(chat.objectiveIds) ? chat.objectiveIds : [],
+      messages: chat.messages.filter(message => message.id !== assistantMessageId).map(message => ({ role:message.role, content:message.content })),
+    });
+    if (!result?.ok) throw new Error(result?.error || 'No se pudo iniciar la respuesta.');
+    if (Array.isArray(result.sources) && result.sources.length) attachSources(result.sources);
+  } catch (error) {
+    if (state.activeRequestId === requestId) finishWithError(error.message || String(error));
   }
 }
 
