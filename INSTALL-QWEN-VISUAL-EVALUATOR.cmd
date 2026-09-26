@@ -3,9 +3,9 @@ setlocal
 set "OLLAMA_MODELS=D:\LocalAI\Models"
 set "NEXA_OLLAMA=D:\LocalAI\Ollama\ollama.exe"
 
-echo ============================================================
+echo ------------------------------------------------------------
 echo Nexa Visual Evaluator v1 - Qwen2.5-VL 3B
-echo ============================================================
+echo ------------------------------------------------------------
 if exist "%NEXA_OLLAMA%" (
   echo Usando: %NEXA_OLLAMA%
   "%NEXA_OLLAMA%" pull qwen2.5vl:3b

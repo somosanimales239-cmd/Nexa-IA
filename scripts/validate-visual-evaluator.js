@@ -34,6 +34,17 @@ assert.equal(duplicate.critical, true);
 const repaired = applyRepairs({ positive_prompt:'cartoon kangaroo boxer', negative_prompt:'blurry' }, duplicate, 2);
 assert.match(repaired.positive_prompt, /single isolated subject/i);
 assert.match(repaired.negative_prompt, /duplicate subject/i);
+assert.match(repaired.negative_prompt, /character sheet/i);
+
+const wrongSpecies = scoreEvaluation({
+  subject_identity:'pass', subject_count:'pass', species_identity:'fail', framing:'pass', style:'pass',
+  requested_attributes:'pass', anatomy:'pass', background:'pass', text_integrity:'na', technical_quality:'pass',
+  detected_subject_count:1, confidence:0.94, error_codes:['E008'], problems:['wrong species'], repair_positive:[], repair_negative:[],
+}, 86);
+const kangarooRepair = applyRepairs({ positive_prompt:'un canguro boxeador cartoon', negative_prompt:'blurry' }, wrongSpecies, 2);
+assert.match(kangarooRepair.positive_prompt, /long upright kangaroo ears/i);
+assert.match(kangarooRepair.positive_prompt, /large muscular balancing tail/i);
+assert.match(kangarooRepair.negative_prompt, /bird beak/i);
 
 const best = bestAttempt([
   { attempt:1, image:{path:'a.png'}, evaluation:{score:70, pass:false} },

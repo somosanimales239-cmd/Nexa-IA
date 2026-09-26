@@ -1,0 +1,11 @@
+PATCH-ACTIVE-NEXA-APP.cmd
+PATCH-ACTIVE-NEXA-APP.ps1
+INSTALL-BUILD-106.2-SOURCE.cmd
+Install-Nexa-Build-106.2.js
+Install-Nexa-Build-106-Core.js
+lib/visual-evaluator.js
+scripts/validate-visual-evaluator.js
+README-BUILD-106.2.txt
+ROLLBACK-BUILD-106.cmd
+Rollback-Nexa-Build-106.js
+INSTALL-QWEN-VISUAL-EVALUATOR.cmd
