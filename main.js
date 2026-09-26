@@ -836,77 +836,150 @@ function clampDimension(value, fallback) {
 
 function inferImageStyle(userRequest) {
   const text = String(userRequest || '').toLowerCase();
-  if (/anime|manga|waifu|studio ghibli|cartoon/.test(text)) return 'anime';
+  if (/anime|manga|waifu|studio ghibli/.test(text)) return 'anime';
   if (/3d|render 3d|cgi|octane/.test(text)) return '3d';
-  if (/illustration|illustrated|comic|vector|drawing|dibujo|ilustraci/.test(text)) return 'illustration';
-  if (/cinematic|movie|film/i.test(userRequest || '')) return 'cinematic';
-  if (/logo|icon|sticker|mascot/.test(text)) return 'graphic';
+  if (/illustration|illustrated|comic|vector|drawing|dibujo|ilustraci|cartoon|animado/.test(text)) return 'illustration';
+  if (/cinematic|movie|film|pelicula|película/.test(text)) return 'cinematic';
+  if (/logo|icon|sticker|mascot|mascota/.test(text)) return 'graphic';
   return 'photorealistic';
 }
 
+function normalizeImageStyle(value, userRequest) {
+  const inferred = inferImageStyle(userRequest);
+  const raw = String(value || '').toLowerCase();
+  if (/anime|manga/.test(raw)) return 'anime';
+  if (/3d|cgi|render/.test(raw)) return '3d';
+  if (/illustr|cartoon|comic|vector|drawing|dibujo|animat/.test(raw)) return 'illustration';
+  if (/cinematic|film|movie/.test(raw)) return 'cinematic';
+  if (/graphic|logo|icon|sticker/.test(raw)) return 'graphic';
+  if (/photo|realistic|photoreal/.test(raw)) return inferred === 'photorealistic' ? 'photorealistic' : inferred;
+  return inferred;
+}
+
+function explicitImageDimensions(userRequest) {
+  const text = String(userRequest || '');
+  const match = text.match(/\b(\d{3,4})\s*[x×]\s*(\d{3,4})\b/i);
+  if (!match) return null;
+  return { width: clampDimension(Number(match[1]), 1024), height: clampDimension(Number(match[2]), 1024) };
+}
+
 function inferImageDimensions(userRequest, style) {
+  const explicit = explicitImageDimensions(userRequest);
+  if (explicit) return explicit;
   const text = String(userRequest || '').toLowerCase();
-  if (/landscape|panorama|banner|wide|horizontal|coche|carro|car|auto|truck|room|habitaci|interior|beach|playa|city|ciudad/.test(text)) {
-    return { width: 1216, height: 832 };
-  }
+  if (/square|cuadrad/.test(text)) return { width: 1024, height: 1024 };
+  if (/9:16|story|vertical largo/.test(text)) return { width: 704, height: 1216 };
+  if (/16:9|wallpaper|panorama|banner|wide/.test(text)) return { width: 1216, height: 704 };
   if (/portrait|vertical|full body|cuerpo completo|persona completa|de pies a cabeza|headshot|retrato|fashion/.test(text)) {
     return { width: 832, height: 1216 };
   }
-  if (style === 'graphic' || /logo|icon/.test(text)) return { width: 1024, height: 1024 };
+  if (/landscape|horizontal|coche|carro|car|auto|truck|room|habitaci|interior|beach|playa|city|ciudad|mountain|monta/.test(text)) {
+    return { width: 1216, height: 832 };
+  }
+  if (style === 'graphic') return { width: 1024, height: 1024 };
   return { width: 1024, height: 1024 };
 }
 
+function imageQualityPreset(style, userRequest) {
+  const dimensions = inferImageDimensions(userRequest, style);
+  const presets = {
+    photorealistic: { steps: 32, cfg: 5.5, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
+    cinematic: { steps: 32, cfg: 6.0, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
+    illustration: { steps: 32, cfg: 6.5, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
+    anime: { steps: 30, cfg: 6.0, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
+    graphic: { steps: 28, cfg: 5.5, sampler_name: 'dpmpp_2m', scheduler: 'karras' },
+    '3d': { steps: 32, cfg: 6.0, sampler_name: 'dpmpp_2m_sde', scheduler: 'karras' },
+  };
+  return { ...dimensions, ...(presets[style] || presets.photorealistic) };
+}
+
+function imageQualitySuffix(style, userRequest) {
+  const text = String(userRequest || '').toLowerCase();
+  const paint = /paint|pintura|mancha|splash|splatter|brush|pincel/.test(text)
+    ? ', controlled artistic paint accents, intentional brush marks, clean negative space'
+    : '';
+  const suffixes = {
+    photorealistic: 'professional photography, realistic materials, natural skin and textures, coherent anatomy, physically plausible lighting, fine detail, sharp subject focus, balanced composition, polished high-end image',
+    cinematic: 'cinematic composition, professional color grading, controlled dramatic lighting, coherent anatomy, fine detail, polished film still quality',
+    illustration: 'professional animated character illustration, polished concept art, clean expressive linework, coherent anatomy, dynamic silhouette, detailed cel shading, crisp edges, expressive face, controlled vibrant color palette, high detail',
+    anime: 'professional anime key art, polished linework, coherent anatomy, expressive face, refined cel shading, crisp silhouette, controlled colors, high detail',
+    graphic: 'professional graphic design, crisp edges, clean shapes, strong hierarchy, balanced composition, controlled palette, production-ready finish',
+    '3d': 'professional 3D render, physically plausible materials, clean geometry, cinematic lighting, refined textures, high detail, production quality',
+  };
+  return `${suffixes[style] || suffixes.photorealistic}${paint}`;
+}
+
+function imageNegativeSuffix(style) {
+  const common = 'low quality, low resolution, blurry, muddy colors, unfinished, amateur, bad composition, duplicate subject, extra limbs, missing limbs, deformed anatomy, malformed hands, distorted face, text, letters, watermark, signature, logo artifacts';
+  if (style === 'graphic') return 'low quality, blurry, pixelated edges, messy layout, accidental text, watermark, logo artifacts, duplicated elements, noisy background';
+  if (style === 'anime' || style === 'illustration') return `${common}, broken linework, inconsistent outline, flat unfinished shading`;
+  return `${common}, plastic skin, oversharpening, overexposure, oversaturation`;
+}
+
+function mergePromptParts(base, addition) {
+  const first = normalizeImagePromptText(base);
+  const second = normalizeImagePromptText(addition);
+  if (!first) return second;
+  if (!second) return first;
+  return `${first}, ${second}`;
+}
+
 function fallbackNegativePrompt(style) {
-  if (style === 'anime') return 'low quality, blurry, extra fingers, extra limbs, bad anatomy, malformed hands, deformed face, duplicate, cropped, watermark, text, logo';
-  if (style === 'graphic') return 'blurry, low quality, noisy, distorted, extra objects, watermark, text artifacts, messy composition';
-  return 'blurry, low quality, low resolution, bad anatomy, deformed hands, extra fingers, extra limbs, malformed face, duplicate, cropped, watermark, logo, text, oversaturated, noisy background';
+  return imageNegativeSuffix(style);
 }
 
 function fallbackPositivePrompt(userRequest, style) {
   const clean = normalizeImagePromptText(userRequest);
   const prefix = {
-    photorealistic: 'masterpiece, highly detailed, photorealistic image',
-    cinematic: 'masterpiece, cinematic, dramatic lighting, highly detailed image',
-    anime: 'masterpiece, high quality anime illustration',
-    illustration: 'high quality detailed illustration',
-    graphic: 'clean graphic design image',
-    '3d': 'high quality 3D render',
+    photorealistic: 'high-end photorealistic image',
+    cinematic: 'cinematic high-end image',
+    anime: 'professional anime illustration',
+    illustration: 'professional animated illustration and character concept art',
+    graphic: 'clean professional graphic design image',
+    '3d': 'professional high quality 3D render',
   }[style] || 'high quality detailed image';
-  return `${prefix}, ${clean}`;
+  return mergePromptParts(`${prefix}, ${clean}`, imageQualitySuffix(style, userRequest));
 }
 
 function fallbackImagePlan(userRequest) {
   const style = inferImageStyle(userRequest);
-  const dimensions = inferImageDimensions(userRequest, style);
-  const steps = style === 'graphic' ? 24 : 30;
-  const cfg = style === 'photorealistic' || style === 'cinematic' ? 6.5 : 7;
+  const preset = imageQualityPreset(style, userRequest);
   return {
     positive_prompt: fallbackPositivePrompt(userRequest, style),
     negative_prompt: fallbackNegativePrompt(style),
     style,
-    width: dimensions.width,
-    height: dimensions.height,
-    steps,
-    cfg,
-    sampler_name: 'euler',
-    scheduler: 'normal',
-    explanation: 'Plan generado por reglas internas de Nexa.',
+    width: preset.width,
+    height: preset.height,
+    steps: preset.steps,
+    cfg: preset.cfg,
+    sampler_name: preset.sampler_name,
+    scheduler: preset.scheduler,
+    explanation: 'Plan de calidad generado por reglas internas de Nexa.',
   };
 }
 
 function sanitizeImagePlan(rawPlan, userRequest) {
   const fallback = fallbackImagePlan(userRequest);
-  const style = String(rawPlan?.style || fallback.style || 'photorealistic').trim() || fallback.style;
+  const style = normalizeImageStyle(rawPlan?.style || fallback.style, userRequest);
+  const preset = imageQualityPreset(style, userRequest);
+  const positive = mergePromptParts(
+    rawPlan?.positive_prompt || rawPlan?.positivePrompt || fallback.positive_prompt,
+    imageQualitySuffix(style, userRequest),
+  );
+  const negative = mergePromptParts(
+    rawPlan?.negative_prompt || rawPlan?.negativePrompt || fallback.negative_prompt,
+    imageNegativeSuffix(style),
+  );
   return {
-    positive_prompt: normalizeImagePromptText(rawPlan?.positive_prompt || rawPlan?.positivePrompt || fallback.positive_prompt),
-    negative_prompt: normalizeImagePromptText(rawPlan?.negative_prompt || rawPlan?.negativePrompt || fallback.negative_prompt),
+    positive_prompt: positive,
+    negative_prompt: negative,
     style,
-    width: clampDimension(rawPlan?.width, fallback.width),
-    height: clampDimension(rawPlan?.height, fallback.height),
-    steps: Math.max(12, Math.min(60, Number(rawPlan?.steps || fallback.steps) || fallback.steps)),
-    cfg: Math.max(2, Math.min(12, Number(rawPlan?.cfg || rawPlan?.cfg_scale || fallback.cfg) || fallback.cfg)),
-    sampler_name: String(rawPlan?.sampler_name || rawPlan?.sampler || fallback.sampler_name || 'euler'),
-    scheduler: String(rawPlan?.scheduler || fallback.scheduler || 'normal'),
+    width: preset.width,
+    height: preset.height,
+    steps: preset.steps,
+    cfg: preset.cfg,
+    sampler_name: preset.sampler_name,
+    scheduler: preset.scheduler,
     explanation: String(rawPlan?.explanation || fallback.explanation || ''),
   };
 }
@@ -930,9 +1003,9 @@ async function buildImagePlanWithOllama(userRequest) {
             'You are Nexa Image Planner.',
             'Turn the user image request into a single JSON object only.',
             'Do not add markdown fences.',
-            'Return exactly these keys: positive_prompt, negative_prompt, style, width, height, steps, cfg, sampler_name, scheduler, explanation.',
+            'Return exactly these keys: positive_prompt, negative_prompt, style, explanation.',
             'Default style to photorealistic unless the user asks for another style.',
-            'Pick portrait dimensions for full-body people, landscape dimensions for scenery/cars/rooms, square for general or product images.',
+            'Focus on visual intent, composition, subject details, materials, lighting, and requested style. Nexa will choose technical image parameters separately.',
             'The positive prompt should be detailed and production-ready for image generation.',
             'The negative prompt should improve quality and avoid common artifacts.',
           ].join(' '),

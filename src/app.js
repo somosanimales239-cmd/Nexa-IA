@@ -421,6 +421,7 @@ function attachSources(sources) {
 function setGenerating(active, mode = null) {
   state.activeRequestMode = active ? (mode || state.activeRequestMode || 'text') : null;
   els.generationBanner.hidden = !active;
+  els.generationBanner.style.display = active ? 'flex' : 'none';
   if (active) {
     const imageMode = state.activeRequestMode === 'image';
     els.generationBannerLabel.textContent = imageMode ? 'Nexa está generando una imagen…' : 'Nexa está escribiendo…';
@@ -428,6 +429,10 @@ function setGenerating(active, mode = null) {
     els.generationBannerVisual.innerHTML = imageMode
       ? ''
       : '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+  } else {
+    els.generationBannerLabel.textContent = '';
+    els.generationBannerVisual.className = 'banner-loader text-loader';
+    els.generationBannerVisual.innerHTML = '';
   }
   els.sendBtn.disabled = active;
   els.promptInput.disabled = active;
@@ -461,11 +466,11 @@ async function sendMessage() {
         assistant.content = result.summary || 'Aquí tienes la imagen.';
         assistant.image = result.image;
       }
-      await persistChat(chat);
       state.activeRequestId = null;
       state.activeAssistantMessageId = null;
       setGenerating(false);
       renderCurrentChat();
+      await persistChat(chat);
       toast('Imagen generada en ComfyUI.','success');
       return;
     }
@@ -478,7 +483,11 @@ async function sendMessage() {
     });
     if (!result?.ok) throw new Error(result?.error || 'No se pudo iniciar la respuesta.');
     if (Array.isArray(result.sources) && result.sources.length) attachSources(result.sources);
-  } catch (error) { finishWithError(error.message || String(error)); }
+  } catch (error) {
+    const message = error.message || String(error);
+    if (wantsImage && String(message).toLowerCase().includes('detenida por el usuario')) return;
+    finishWithError(message);
+  }
 }
 
 async function finishGeneration(stats) {
@@ -508,8 +517,16 @@ function finishWithError(message) {
 async function stopGeneration() {
   if (!state.activeRequestId) return;
   if (state.activeRequestMode === 'image' && window.nexa.images?.stop) {
-    await window.nexa.images.stop(state.activeRequestId);
-    finishWithError('Generación de imagen detenida por el usuario.');
+    const requestId = state.activeRequestId;
+    const chat = currentChat();
+    const assistant = chat?.messages.find(item => item.id === state.activeAssistantMessageId);
+    if (assistant && !assistant.image?.path) assistant.content = 'Generación de imagen detenida.';
+    state.activeRequestId = null;
+    state.activeAssistantMessageId = null;
+    setGenerating(false);
+    renderCurrentChat();
+    if (chat) persistChat(chat).catch(() => {});
+    window.nexa.images.stop(requestId).catch(error => toast(error.message || String(error),'error'));
     return;
   }
   await window.nexa.chat.stop(state.activeRequestId);

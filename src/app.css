@@ -581,3 +581,6 @@ button.source-chip { font:inherit; cursor:pointer; }
   border-radius:16px;
   box-shadow:0 20px 44px rgba(0,0,0,.35);
 }
+
+/* Build 103: force loader to disappear as soon as generation finishes. */
+.generation-banner[hidden] { display:none !important; }
