@@ -50,9 +50,11 @@ function looksLikeImageRequest(value) {
 function fileSrc(value) {
   const source = String(value || '').trim();
   if (!source) return '';
-  const normalized = source.replace(/\\/g, '/');
+  const normalized = source.split('\\').join('/');
   if (/^file:\/\//i.test(normalized)) return encodeURI(normalized);
-  return encodeURI(`file:///${normalized.replace(/^\/+/, '')}`);
+  let clean = normalized;
+  while (clean.startsWith('/')) clean = clean.slice(1);
+  return encodeURI(`file:///${clean}`);
 }
 
 function renderTextLoader() {
@@ -388,7 +390,6 @@ function renderCurrentChat() {
       <div>
         <div class="message-head"><span class="message-author">${message.role === 'assistant' ? 'Nexa AI' : 'Tú'}</span><span class="message-time">${formatTime(message.createdAt)}</span></div>
         <div class="${bodyClass}">${renderMessageBody(message)}</div>
-        ${message.kind === 'image' ? '' : sourceChips(message)}
         ${renderMessageActions(message)}
       </div>
     </article>`;
@@ -413,8 +414,8 @@ function attachSources(sources) {
   const chat = currentChat();
   const message = chat?.messages.find(item => item.id === state.activeAssistantMessageId);
   if (!message) return;
+  // Keep source metadata attached for grounding and Knowledge, but do not show source chips in the visible chat.
   message.sources = Array.isArray(sources) ? sources : [];
-  renderCurrentChat();
 }
 
 function setGenerating(active, mode = null) {
