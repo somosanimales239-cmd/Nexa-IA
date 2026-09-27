@@ -12,4 +12,18 @@ for(const token of ['PREMIUM POSITIVE PROMPT','PREMIUM NEGATIVE PROMPT','exactly
   if(!compiler.includes(token)){console.error('Premium compiler missing expected rule:',token);process.exit(4);}
 }
 for(const file of ['main-v189.js','lib/premium-prompt-compiler-v189.js']){const t=fs.readFileSync(path.join(root,file),'utf8');if(t.includes('<<<<<<<')||t.includes('>>>>>>>')){console.error('Conflict marker:',file);process.exit(5);}}
+
+const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+if(pkg.version!=='1.8.9'||pkg.main!=='main-v189.js'){
+  console.error(`v1.8.9 package entry/version wrong: version=${pkg.version} main=${pkg.main}`);
+  process.exit(6);
+}
+const buildFiles=Array.isArray(pkg?.build?.files)?pkg.build.files.map(String):[];
+for(const requiredBuildFile of ['main-v189.js','main-v188.js','main.js','preload.js']){
+  if(!buildFiles.includes(requiredBuildFile)){
+    console.error('v1.8.9 electron-builder files missing:',requiredBuildFile);
+    process.exit(7);
+  }
+}
+
 console.log('Nexa AI v1.8.9 Invisible Premium Prompt Compiler validation: OK');

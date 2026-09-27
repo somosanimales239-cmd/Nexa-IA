@@ -5,7 +5,7 @@
     "type": "electron",
     "version": "1.8.9",
     "application_version": "1.8.9",
-    "workspace_revision": "1.0.60",
+    "workspace_revision": "1.0.61",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,7 +13,7 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-09-26 21:13:57",
+    "updated_at": "2026-09-26 22:37:22",
     "build": "1.8.9",
     "features": [
         "invisible-premium-prompt-compiler",
