@@ -1,0 +1,30 @@
+.chat-dropzone {
+  border: 1px dashed #4f8cff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.95;
+}
+.chat-dropzone.dragover {
+  background: rgba(79, 140, 255, 0.08);
+  border-color: #7aa6ff;
+}
+.chat-attachment-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.chat-attachment-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.chat-attachment-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  font-size: 12px;
+}
