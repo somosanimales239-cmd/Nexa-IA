@@ -3,9 +3,9 @@
     "slug": "project-20260920-234017",
     "uuid": "3e5730f3-ca49-43d7-9674-65f402ecc6ca",
     "type": "electron",
-    "version": "1.9.2",
-    "application_version": "1.9.2",
-    "workspace_revision": "1.0.69",
+    "version": "1.9.3",
+    "application_version": "1.9.3",
+    "workspace_revision": "1.0.71",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,8 +13,8 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-09-27 13:23:09",
-    "build": "1.9.2",
+    "updated_at": "2026-09-27 15:01:01",
+    "build": "1.9.3",
     "features": [
         "chat-attachments-ui",
         "drag-drop-images-documents",
@@ -36,6 +36,9 @@
         "natural-language-web-research",
         "private-web-source-identifiers",
         "official-source-second-pass",
-        "conversation-inline-rename"
+        "conversation-inline-rename",
+        "visual-prompt-writer-refusal-fallback",
+        "visual-similarity-originality-adapter",
+        "premium-positive-negative-prompt-fallback"
     ]
 }

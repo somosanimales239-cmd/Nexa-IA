@@ -1,14 +1,14 @@
 {
   "name": "nexa-ai-local",
-  "version": "1.9.2",
-  "description": "Nexa AI v1.9.2 - Private Web Citations + Official Source Retry + Conversation Rename",
-  "main": "main-v192.js",
+  "version": "1.9.3",
+  "description": "Nexa AI v1.9.3 - Refusal-safe Visual Prompt Writer + Similarity Adapter",
+  "main": "main-v193.js",
   "author": "Nexa AI",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main-v192.js && node --check lib/web-intelligence-refinements-v192.js && node --check src/conversation-tools-v192.js && node --check main-v191.js && node --check lib/web-intelligence-v191.js && node --check src/web-intelligence-v191.js && node --check main-v190.js && node --check main-v189.js && node --check main-v188.js && node --check preload.js && node --check src/chat-attachments-v190.js && node --check lib/chat-routing-v190.js && node --check src/app.js && npm run validate:v192 && npm run validate:v191 && npm run validate:v190 && npm run validate:v189 && npm run validate:v188 && npm run test:v192 && npm run test:v191 && npm run test:v190 && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:web-research && npm run validate:research-validation && npm run validate:research-applicability && npm run validate:browser-bridge && npm run validate:auto-factory && npm run validate:browser-extension && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check main-v193.js && node --check lib/visual-prompt-writer-v193.js && npm run validate:v193 && npm run test:v193 && node --check main-v192.js && node --check lib/web-intelligence-refinements-v192.js && node --check src/conversation-tools-v192.js && node --check main-v191.js && node --check lib/web-intelligence-v191.js && node --check src/web-intelligence-v191.js && node --check main-v190.js && node --check main-v189.js && node --check main-v188.js && node --check preload.js && node --check src/chat-attachments-v190.js && node --check lib/chat-routing-v190.js && node --check src/app.js && npm run validate:v192 && npm run validate:v191 && npm run validate:v190 && npm run validate:v189 && npm run validate:v188 && npm run test:v192 && npm run test:v191 && npm run test:v190 && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:web-research && npm run validate:research-validation && npm run validate:research-applicability && npm run validate:browser-bridge && npm run validate:auto-factory && npm run validate:browser-extension && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "build:linux": "npm run validate && electron-builder --linux AppImage deb --publish never",
     "build:mac": "npm run validate && electron-builder --mac dmg zip --publish never",
@@ -33,7 +33,9 @@
     "validate:v191": "node scripts/validate-v191.js",
     "test:v191": "node scripts/test-v191-web-intelligence.js",
     "validate:v192": "node scripts/validate-v192.js",
-    "test:v192": "node scripts/test-v192-refinements.js"
+    "test:v192": "node scripts/test-v192-refinements.js",
+    "validate:v193": "node scripts/validate-v193.js",
+    "test:v193": "node scripts/test-v193-prompt-writer.js"
   },
   "devDependencies": {
     "electron": "43.1.0",
@@ -47,6 +49,7 @@
       "buildResources": "assets"
     },
     "files": [
+      "main-v193.js",
       "main-v192.js",
       "main-v191.js",
       "main-v190.js",

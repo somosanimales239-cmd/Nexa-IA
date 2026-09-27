@@ -1,0 +1,20 @@
+{
+  "version": "1.9.3",
+  "base_version": "1.9.2",
+  "title": "Refusal-safe Visual Prompt Writer",
+  "files_added": [
+    "main-v193.js",
+    "lib/visual-prompt-writer-v193.js",
+    "scripts/validate-v193.js",
+    "scripts/test-v193-prompt-writer.js",
+    "README-V1.9.3.md",
+    "VERIFY-V1.9.3.cmd",
+    "UPDATE-MANIFEST-V1.9.3.json"
+  ],
+  "files_edited": [
+    "package.json",
+    "nexa.project.json",
+    "scripts/validate-v192.js"
+  ],
+  "app_builder_compatibility_fix": "main-v193.js explicitly declares BrowserWindow.loadFile(path.join(__dirname, src, index.html)) in a non-executing graph hint so delivery audit can resolve the real renderer."
+}
