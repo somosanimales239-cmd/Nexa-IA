@@ -1,0 +1,27 @@
+{
+  "update": "Nexa AI v1.9.0 Chat Attachments + Qwen Vision",
+  "type": "overlay",
+  "required_base": "Nexa AI v1.8.9",
+  "verified_base_git_blobs": {
+    "main-v189.js": "6b634aa4a0e533e90a0dc4cac87ab1ecd4b1bbe9",
+    "main-v188.js": "059939965883ca6173e85f19dc4e148202b29e56",
+    "lib/premium-prompt-compiler-v189.js": "740fcafcc0f1285f4aab13d02fa2ab45650af69f",
+    "lib/visual-review-v188.js": "afd91c868be7c9ce59a417194446a5268caeeed2",
+    "lib/visual-review-v185.js": "05e63059be4c0eebd49388d4614bda0d05061477",
+    "src/reference-panel-v188.js": "9806ea8ea29932d34124f61a4bc40d34655096cb"
+  },
+  "changed_files": [
+    "package.json",
+    "nexa.project.json",
+    "main-v190.js",
+    "preload.js",
+    "lib/chat-routing-v190.js",
+    "src/chat-attachments-v190.js",
+    "scripts/validate-v188.js",
+    "scripts/validate-v189.js",
+    "scripts/validate-v190.js",
+    "scripts/test-v190-routing.js",
+    "README-V1.9.0.md",
+    "VERIFY-V1.9.0.cmd"
+  ]
+}

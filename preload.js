@@ -47,6 +47,9 @@ contextBridge.exposeInMainWorld('nexa', {
     onError: callback => on('chat:error', callback),
     onContext: callback => on('chat:context', callback),
   }),
+  attachments: Object.freeze({
+    stage: payload => ipcRenderer.invoke('chat-attachments:stage', payload),
+  }),
   images: Object.freeze({
     generate: payload => ipcRenderer.invoke('image:generate', payload),
     stop: requestId => ipcRenderer.invoke('image:stop', requestId),

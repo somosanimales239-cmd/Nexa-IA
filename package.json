@@ -1,20 +1,21 @@
 {
   "name": "nexa-ai-local",
-  "version": "1.8.9",
-  "description": "Nexa AI v1.8.9 - Invisible Premium Prompt Compiler on stable v1.8.8 visual pipeline",
-  "main": "main-v189.js",
+  "version": "1.9.0",
+  "description": "Nexa AI v1.9.0 - Integrated Chat Attachments + Qwen Vision + chat reference consistency",
+  "main": "main-v190.js",
   "author": "Nexa AI",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main-v189.js && node --check lib/premium-prompt-compiler-v189.js && node --check main-v188.js && node --check lib/visual-review-v188.js && node --check src/reference-panel-v188.js && node --check main.js && node --check preload.js && node --check src/app.js && npm run validate:v189 && npm run validate:v188 && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:web-research && npm run validate:research-validation && npm run validate:research-applicability && npm run validate:browser-bridge && npm run validate:auto-factory && npm run validate:browser-extension && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check main-v190.js && node --check main-v189.js && node --check main-v188.js && node --check preload.js && node --check src/chat-attachments-v190.js && node --check lib/chat-routing-v190.js && node --check src/app.js && npm run validate:v190 && npm run validate:v189 && npm run validate:v188 && npm run test:v190 && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:web-research && npm run validate:research-validation && npm run validate:research-applicability && npm run validate:browser-bridge && npm run validate:auto-factory && npm run validate:browser-extension && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "build:linux": "npm run validate && electron-builder --linux AppImage deb --publish never",
     "build:mac": "npm run validate && electron-builder --mac dmg zip --publish never",
     "validate:delivery": "node scripts/validate-delivery.js",
     "validate:project": "node scripts/validate-project.js",
     "test": "node --test scripts/nexa-baseline.test.js",
+    "test:v190": "node scripts/test-v190-routing.js",
     "ui:smoke": "electron scripts/ui-smoke.js",
     "validate:renderer": "node scripts/validate-renderer-compat.js",
     "validate:chat-scroll": "node scripts/validate-chat-scroll.js",
@@ -27,19 +28,113 @@
     "validate:auto-factory": "node scripts/validate-auto-knowledge-factory.js",
     "validate:v185": "node scripts/validate-v185.js",
     "validate:v188": "node scripts/validate-v188.js",
-    "validate:v189": "node scripts/validate-v189.js"
+    "validate:v189": "node scripts/validate-v189.js",
+    "validate:v190": "node scripts/validate-v190.js"
   },
-  "devDependencies": {"electron":"43.1.0","electron-builder":"26.15.3"},
+  "devDependencies": {
+    "electron": "43.1.0",
+    "electron-builder": "26.15.3"
+  },
   "build": {
-    "appId":"com.nexa.localai","productName":"Nexa AI",
-    "directories":{"output":"release","buildResources":"assets"},
-    "files":["main-v189.js","main-v188.js","main.js","preload.js","src/**/*","package.json","assets/**/*","lib/**/*"],
-    "win":{"target":[{"target":"nsis","arch":["x64"]},{"target":"portable","arch":["x64"]},{"target":"zip","arch":["x64"]}],"icon":"assets/icon.ico"},
-    "nsis":{"oneClick":false,"allowToChangeInstallationDirectory":true,"createDesktopShortcut":true,"createStartMenuShortcut":true,"shortcutName":"Nexa AI","artifactName":"${productName}-Setup-${version}-${arch}.${ext}","allowElevation":true,"perMachine":false,"uninstallDisplayName":"Nexa AI","deleteAppDataOnUninstall":false},
-    "portable":{"artifactName":"${productName}-Portable-${version}-${arch}.${ext}"},
-    "linux":{"target":[{"target":"AppImage","arch":["x64"]},{"target":"deb","arch":["x64"]}],"category":"Utility","artifactName":"${productName}-${version}-${arch}.${ext}","icon":"assets/logo-512.png"},
-    "mac":{"target":[{"target":"dmg","arch":["x64"]},{"target":"zip","arch":["x64"]}],"category":"public.app-category.utilities","artifactName":"${productName}-${version}-${arch}.${ext}","icon":"assets/logo-512.png"}
+    "appId": "com.nexa.localai",
+    "productName": "Nexa AI",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "main-v190.js",
+      "main-v189.js",
+      "main-v188.js",
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json",
+      "assets/**/*",
+      "lib/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nexa AI",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}",
+      "allowElevation": true,
+      "perMachine": false,
+      "uninstallDisplayName": "Nexa AI",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "icon": "assets/logo-512.png"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.utilities",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "icon": "assets/logo-512.png"
+    }
   },
-  "engines":{"node":">=24.0.0"},
-  "dependencies":{"mammoth":"1.10.0","pdfjs-dist":"5.4.149"}
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "mammoth": "1.10.0",
+    "pdfjs-dist": "5.4.149"
+  }
 }

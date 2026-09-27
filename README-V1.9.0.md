@@ -1,32 +1,23 @@
-# Nexa AI v1.9.0 — Chat Attachments + Vision Intake
+# Nexa AI v1.9.0 — Chat Attachments + Qwen Vision
 
-## Objetivo
-Agregar a Nexa un sistema estilo ChatGPT para:
-- arrastrar y soltar imágenes/documentos al chat
-- seleccionar archivos desde un botón
-- copiar y pegar imágenes/texto en el chat
-- usar imágenes del chat como **Reference Images · Parecido y Consistencia**
-- mandar imágenes del chat a Qwen para visión/preguntas normales
+Update overlay para el proyecto Nexa AI v1.8.9 existente.
 
-## Idea principal
-El usuario ya no necesita comandos especiales.
-El flujo debe ser natural:
-1. Usuario escribe normal.
-2. Usuario arrastra/pega/carga imagen o documento.
-3. Nexa detecta el tipo de archivo.
-4. Si es imagen:
-   - puede usarse para visión general
-   - puede usarse para parecido/consistencia
-5. Si es documento:
-   - Nexa lo adjunta al mensaje
-   - puede extraer texto para contexto
-6. Si el usuario dice “hazlo parecido”, “igual”, “same dog”, “usa esta imagen”, etc. la imagen del chat pasa al motor de referencia.
+## Incluye
+- botón + en el compositor real
+- drag & drop
+- Ctrl+V de imágenes
+- Ctrl+V de texto normal sin interferencia
+- imágenes PNG/JPG/JPEG/WEBP
+- PDF/DOCX/TXT/MD/CSV/JSON
+- Qwen2.5-VL:3b para preguntas visuales
+- documentos como contexto de chat
+- imágenes del chat como Reference Consistency
+- lenguaje natural: “el mismo perrito pero en un parque…” se enruta como generación si hay imagen adjunta
+- adjuntos persistentes en el historial mediante metadata `chat_attachment`
+- el panel viejo Reference Images de Settings queda oculto
 
-## Qué incluye este paquete
-- UI de adjuntos en chat
-- manejador drag & drop
-- manejador paste
-- ingestión de archivos
-- router visión/referencias
-- persistencia simple de adjuntos del mensaje
-- validación del paquete
+## Cadena runtime
+main-v190.js → main-v189.js → main-v188.js → main.js
+
+## Importante
+Este ZIP es un UPDATE OVERLAY para subir sobre el proyecto v1.8.9 actual. No es un proyecto independiente nuevo.
