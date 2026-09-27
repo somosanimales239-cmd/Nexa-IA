@@ -1,0 +1,19 @@
+{
+  "version": "1.9.2",
+  "base_required": "1.9.1",
+  "new_files": [
+    "main-v192.js",
+    "lib/web-intelligence-refinements-v192.js",
+    "src/conversation-tools-v192.js",
+    "scripts/validate-v192.js",
+    "scripts/test-v192-refinements.js",
+    "README-V1.9.2.md",
+    "VERIFY-V1.9.2.cmd"
+  ],
+  "modified_files": [
+    "package.json",
+    "nexa.project.json",
+    "scripts/validate-v191.js"
+  ],
+  "preserved_layers": ["v1.9.1", "v1.9.0", "v1.8.9", "v1.8.8"]
+}

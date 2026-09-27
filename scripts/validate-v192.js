@@ -1,0 +1,14 @@
+'use strict';
+const fs=require('fs'),path=require('path');
+const root=path.join(__dirname,'..');
+const required=['main-v192.js','main-v191.js','lib/web-intelligence-refinements-v192.js','lib/web-intelligence-v191.js','src/conversation-tools-v192.js','src/index.html','src/app.js','package.json','nexa.project.json','scripts/test-v192-refinements.js'];
+for(const file of required){const full=path.join(root,file);if(!fs.existsSync(full))throw new Error('Missing v1.9.2 dependency: '+file);const source=fs.readFileSync(full,'utf8');if(source.includes('<<<<<<<')||source.includes('>>>>>>>'))throw new Error('Conflict marker: '+file);}
+const main=fs.readFileSync(path.join(root,'main-v192.js'),'utf8');for(const token of ["require('./main-v191.js')",'Refine.install(WebIntel)','conversation-tools-v192.js','store:get','loadFile('])if(!main.includes(token))throw new Error('main-v192 missing '+token);
+const refinements=fs.readFileSync(path.join(root,'lib','web-intelligence-refinements-v192.js'),'utf8');for(const token of ['cleanInternalRefs','officialQueries','official-retry','publicResearchSystemMessage','citation:\'\'','Never expose','enhancedResearchForChat'])if(!refinements.includes(token))throw new Error('v1.9.2 web refinement missing '+token);
+const conversations=fs.readFileSync(path.join(root,'src','conversation-tools-v192.js'),'utf8');for(const token of ['chat-rename-v192','Editar nombre de la conversación','data-rename-chat-v192','chatTitle','dispatchEvent(new Event(\'change\'','MutationObserver'])if(!conversations.includes(token))throw new Error('conversation rename integration missing '+token);
+const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));if(pkg.version!=='1.9.2'||pkg.main!=='main-v192.js')throw new Error(`v1.9.2 package entry/version wrong: ${pkg.version} / ${pkg.main}`);
+for(const script of ['validate:v192','test:v192','validate:v191','test:v191'])if(!String(pkg.scripts?.[script]||'').trim())throw new Error('package scripts missing '+script);
+if(!String(pkg.scripts.validate||'').includes('validate:v192')||!String(pkg.scripts.validate||'').includes('test:v192'))throw new Error('global validate does not include v1.9.2 checks');
+const buildFiles=Array.isArray(pkg?.build?.files)?pkg.build.files.map(String):[];for(const file of ['main-v192.js','main-v191.js','main-v190.js','main-v189.js','main-v188.js','main.js','preload.js'])if(!buildFiles.includes(file))throw new Error('electron-builder missing '+file);
+const project=JSON.parse(fs.readFileSync(path.join(root,'nexa.project.json'),'utf8'));if(String(project.application_version||project.version||'')!=='1.9.2'||String(project.build||'')!=='1.9.2')throw new Error('nexa.project version/build mismatch');
+console.log('Nexa AI v1.9.2 Web Privacy + Official Retry + Conversation Rename validation: OK');

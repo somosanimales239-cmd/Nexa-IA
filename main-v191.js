@@ -7,6 +7,7 @@ const fs=require('fs');
 const path=require('path');
 const {ipcMain,BrowserWindow,app}=require('electron');
 const WebIntel=require('./lib/web-intelligence-v191');
+const WebIntelRefine=require('./lib/web-intelligence-refinements-v192');
 
 const VERSION='1.9.1';
 let runtimeSettings={
@@ -14,6 +15,7 @@ let runtimeSettings={
   internetResearchEnabled:true,autoResearchOnMissing:true,webMaxSources:5,
 };
 
+WebIntelRefine.install(WebIntel);
 WebIntel.patchBrowserBridgeCapture();
 
 const ACTIVE_ELECTRON_GRAPH={preload:path.join(__dirname,'preload.js'),renderer:path.join(__dirname,'src','index.html')};
