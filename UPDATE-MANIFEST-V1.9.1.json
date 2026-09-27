@@ -1,0 +1,92 @@
+{
+  "update": "Nexa AI v1.9.1 Premium Web Intelligence",
+  "baseline": "Nexa AI v1.9.0 current GitHub repository",
+  "created_utc": "2026-09-27T06:50:06.417556+00:00",
+  "active_entry": "main-v191.js",
+  "runtime_chain": [
+    "main-v191.js",
+    "main-v190.js",
+    "main-v189.js",
+    "main-v188.js",
+    "main.js"
+  ],
+  "baseline_github_blob_shas": {
+    "package.json": "6ab6d8d132b078d1e9f27b6802e259110884e4e0",
+    "main-v190.js": "722dc3b255dd6b2b4db59fd51d3ff6a304c0415c",
+    "main-v189.js": "6b634aa4a0e533e90a0dc4cac87ab1ecd4b1bbe9",
+    "main-v188.js": "059939965883ca6173e85f19dc4e148202b29e56",
+    "main.js": "1a516df127f6cf2d0b3d0d196ea4d5bfa468b898",
+    "lib/web-research.js": "c8d60c012b37b57f38a4457a26ddb4e7d89376ff",
+    "lib/browser-bridge.js": "e8cea021050778a7ce130b21ea608e9369c16db6",
+    "src/app.js": "4f18ff55cee045da0fe9765dac6a82e28fd89309",
+    "src/index.html": "c4252dc4f35c6c140b91878fede5c438b3df1565",
+    "lib/chat-routing-v190.js": "974a2ba39b7491aa7a9010c9fe6e6f6303c17790",
+    "src/chat-attachments-v190.js": "6a40dd11dcdd827579225b71f1f4bd0eca5f1345"
+  },
+  "files": [
+    {
+      "path": "main-v191.js",
+      "sha256": "9a7238cc8a9243f3a228f4df51975ad792412528c1240d0a30afc3d67b6147a5",
+      "bytes": 6075
+    },
+    {
+      "path": "preload.js",
+      "sha256": "785c8e99230d5256133219dd1e321b3371a070d6fc26326741a1168403d8401e",
+      "bytes": 5536
+    },
+    {
+      "path": "lib/web-intelligence-v191.js",
+      "sha256": "e1b422d4f508d052fa7c440ad09d23724dddd6c3c2aa54ea8da5918929f38a5e",
+      "bytes": 27125
+    },
+    {
+      "path": "src/web-intelligence-v191.js",
+      "sha256": "de7a9982049210f9ca4880b357c4a1ede19bf6a2de95aadf1c505c3950f1b06e",
+      "bytes": 1930
+    },
+    {
+      "path": "scripts/validate-v190.js",
+      "sha256": "e49426de1ce5b9abec110920617f169531191556bbe1819b69d27ee22dd0a301",
+      "bytes": 1842
+    },
+    {
+      "path": "scripts/validate-v191.js",
+      "sha256": "cdf283f8d9cbc06c9ba606254615eb58ef06d48ac227cc310afd0aa669991345",
+      "bytes": 3517
+    },
+    {
+      "path": "scripts/test-v191-web-intelligence.js",
+      "sha256": "bb1540f40e7266c5848eb6f008be5d8342a455048153cb2415f200391efa76e2",
+      "bytes": 2007
+    },
+    {
+      "path": "package.json",
+      "sha256": "a7112ac114245d92f065800d2c2c1e87c394b6a7e093dc00d6d340ef5079e1ff",
+      "bytes": 5033
+    },
+    {
+      "path": "nexa.project.json",
+      "sha256": "032b5b925f59b18d20a3a7a47138b5bb318cbf9777d06a7c1ef3e6adaf0dbeec",
+      "bytes": 1220
+    },
+    {
+      "path": "README-V1.9.1.md",
+      "sha256": "e2360baeb536f86468312be4cd76be4bb873de296b15a48e66c7d0ad5b231424",
+      "bytes": 2001
+    },
+    {
+      "path": "VERIFY-V1.9.1.cmd",
+      "sha256": "df870b0315eed7428db3aa2aae2e74629c95a0765190909487056f483ae413ed",
+      "bytes": 623
+    }
+  ],
+  "validation": [
+    "JavaScript syntax checks passed for v1.9.1 modified runtime/renderer/validators",
+    "Deterministic Research Compiler routing tests passed",
+    "Mocked Web Intelligence engine integration passed",
+    "Mocked IPC wrapper integration passed",
+    "Existing v1.9.0 attachment router bypass preserved by wrapper test",
+    "Current repository validators inspected for v1.9.0/main-v190 hard-coding; only validate-v190 required compatibility update"
+  ],
+  "not_claimed": "No claim of end-to-end execution on the user Windows/Ollama/Internet installation before the GitHub/App Builder build runs."
+}

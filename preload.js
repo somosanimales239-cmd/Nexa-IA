@@ -86,6 +86,9 @@ contextBridge.exposeInMainWorld('nexa', {
     missing: (objectiveId, limit) => ipcRenderer.invoke('research:missing', objectiveId, limit),
     onProgress: callback => on('research:progress', callback),
   }),
+  webIntelligence: Object.freeze({
+    onProgress: callback => on('web-intelligence:progress', callback),
+  }),
   factory: Object.freeze({
     list: () => ipcRenderer.invoke('factory:list'),
     create: input => ipcRenderer.invoke('factory:create', input),

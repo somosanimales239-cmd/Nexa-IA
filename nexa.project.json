@@ -3,9 +3,9 @@
     "slug": "project-20260920-234017",
     "uuid": "3e5730f3-ca49-43d7-9674-65f402ecc6ca",
     "type": "electron",
-    "version": "1.9.0",
-    "application_version": "1.9.0",
-    "workspace_revision": "1.0.63",
+    "version": "1.9.1",
+    "application_version": "1.9.1",
+    "workspace_revision": "1.0.64",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,8 +13,8 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-09-27 00:19:41",
-    "build": "1.9.0",
+    "updated_at": "2026-09-27 09:56:56",
+    "build": "1.9.1",
     "features": [
         "chat-attachments-ui",
         "drag-drop-images-documents",
@@ -25,6 +25,14 @@
         "chat-reference-consistency",
         "pdf-docx-txt-md-context",
         "invisible-premium-prompt-compiler",
-        "stable-v188-visual-review"
+        "stable-v188-visual-review",
+        "premium-web-research-compiler",
+        "automatic-web-confidence-router",
+        "multi-query-web-search",
+        "browser-bridge-web-research",
+        "direct-web-search-fallback",
+        "source-priority-engine",
+        "evidence-conflict-verifier",
+        "natural-language-web-research"
     ]
 }
