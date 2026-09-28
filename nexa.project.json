@@ -3,9 +3,9 @@
     "slug": "project-20260920-234017",
     "uuid": "3e5730f3-ca49-43d7-9674-65f402ecc6ca",
     "type": "electron",
-    "version": "1.9.4",
-    "application_version": "1.9.4",
-    "workspace_revision": "1.0.72",
+    "version": "1.9.5",
+    "application_version": "1.9.5",
+    "workspace_revision": "1.0.73",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,8 +13,8 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-09-27 22:45:44",
-    "build": "1.9.4",
+    "updated_at": "2026-09-28 02:24:34",
+    "build": "1.9.5",
     "features": [
         "chat-attachments-ui",
         "drag-drop-images-documents",
@@ -43,6 +43,20 @@
         "prompt-drift-guard",
         "constraint-fusion",
         "qwen-drift-evaluation-hard-requirements",
-        "repair-engine-drift-correction"
+        "repair-engine-drift-correction",
+        "image-intelligence-v195",
+        "natural-language-image-intent-v2",
+        "prompt-sanitizer",
+        "positive-negative-conflict-resolver",
+        "purpose-profile-engine",
+        "output-spec-enforcer",
+        "transparent-background-postprocess",
+        "4k-output-upscale",
+        "visual-requirement-graph",
+        "strict-qwen-critical-gates",
+        "style-lock-evaluator",
+        "originality-similarity-adapter-v2",
+        "selective-repair-escalation",
+        "technical-output-quality-gate"
     ]
 }
