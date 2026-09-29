@@ -1,6 +1,8 @@
 {
   "version": "1.9.7",
-  "title": "Comfy Model Inspector + Smart Checkpoint Router + High-Resolution 4K Pipeline",
+  "title": "High-Resolution 4K Pipeline + Comfy Model Inspector + Build Gate FIX1",
+  "complete_update": true,
+  "includes_build_gate_fix": true,
   "files": [
     "main-v197.js",
     "lib/image-intelligence-v197.js",

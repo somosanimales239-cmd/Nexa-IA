@@ -1,14 +1,14 @@
 {
   "name": "nexa-ai-local",
   "version": "1.9.7",
-  "description": "Nexa AI v1.9.6 - Comfy Model Inspector + Smart Checkpoint Router + Style Authority",
+  "description": "Nexa AI v1.9.7 - Comfy Model Inspector + Smart Checkpoint Router + High-Resolution 4K Pipeline",
   "main": "main-v197.js",
   "author": "Nexa AI",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "validate": "node --check main-v196.js && node --check lib/image-intelligence-v196.js && node --check src/image-intelligence-v196.js && npm run validate:v196 && npm run test:v196 && node --check main-v195.js && node --check lib/image-intelligence-v195.js && node --check src/image-intelligence-v195.js && npm run validate:v195 && npm run test:v195 && node --check main-v194.js && node --check lib/prompt-drift-guard-v194.js && npm run validate:v194 && npm run test:v194 && node --check main-v193.js && node --check lib/visual-prompt-writer-v193.js && npm run validate:v193 && npm run test:v193 && node --check main-v192.js && node --check lib/web-intelligence-refinements-v192.js && node --check src/conversation-tools-v192.js && node --check main-v191.js && node --check lib/web-intelligence-v191.js && node --check src/web-intelligence-v191.js && node --check main-v190.js && node --check main-v189.js && node --check main-v188.js && node --check preload.js && node --check src/chat-attachments-v190.js && node --check lib/chat-routing-v190.js && node --check src/app.js && npm run validate:v192 && npm run validate:v191 && npm run validate:v190 && npm run validate:v189 && npm run validate:v188 && npm run test:v192 && npm run test:v191 && npm run test:v190 && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:web-research && npm run validate:research-validation && npm run validate:research-applicability && npm run validate:browser-bridge && npm run validate:auto-factory && npm run validate:browser-extension && npm run validate:delivery && npm run validate:project && npm test",
+    "validate": "node --check main-v197.js && node --check lib/image-intelligence-v197.js && node --check lib/highres-pipeline-v197.js && node --check src/image-intelligence-v197.js && npm run validate:v197 && npm run test:v197 && node --check main-v195.js && node --check lib/image-intelligence-v195.js && node --check src/image-intelligence-v195.js && npm run validate:v195 && npm run test:v195 && node --check main-v194.js && node --check lib/prompt-drift-guard-v194.js && npm run validate:v194 && npm run test:v194 && node --check main-v193.js && node --check lib/visual-prompt-writer-v193.js && npm run validate:v193 && npm run test:v193 && node --check main-v192.js && node --check lib/web-intelligence-refinements-v192.js && node --check src/conversation-tools-v192.js && node --check main-v191.js && node --check lib/web-intelligence-v191.js && node --check src/web-intelligence-v191.js && node --check main-v190.js && node --check main-v189.js && node --check main-v188.js && node --check preload.js && node --check src/chat-attachments-v190.js && node --check lib/chat-routing-v190.js && node --check src/app.js && npm run validate:v192 && npm run validate:v191 && npm run validate:v190 && npm run validate:v189 && npm run validate:v188 && npm run test:v192 && npm run test:v191 && npm run test:v190 && npm run validate:renderer && npm run validate:chat-scroll && npm run validate:knowledge && npm run validate:web-research && npm run validate:research-validation && npm run validate:research-applicability && npm run validate:browser-bridge && npm run validate:auto-factory && npm run validate:browser-extension && npm run validate:delivery && npm run validate:project && npm test",
     "build:win": "npm run validate && electron-builder --win nsis portable zip --x64 --publish never",
     "build:linux": "npm run validate && electron-builder --linux AppImage deb --publish never",
     "build:mac": "npm run validate && electron-builder --mac dmg zip --publish never",
@@ -40,8 +40,6 @@
     "test:v194": "node scripts/test-v194-prompt-drift-guard.js",
     "validate:v195": "node scripts/validate-v195.js",
     "test:v195": "node scripts/test-v195-image-intelligence.js",
-    "validate:v196": "node scripts/validate-v196.js",
-    "test:v196": "node scripts/test-v196-image-intelligence.js",
     "validate:v197": "node scripts/validate-v197.js",
     "test:v197": "node scripts/test-v197-image-intelligence.js"
   },
@@ -57,7 +55,6 @@
       "buildResources": "assets"
     },
     "files": [
-      "main-v196.js",
       "main-v195.js",
       "main-v194.js",
       "main-v193.js",
