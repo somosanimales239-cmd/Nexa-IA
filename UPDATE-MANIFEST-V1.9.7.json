@@ -1,8 +1,7 @@
 {
   "version": "1.9.7",
-  "title": "High-Resolution 4K Pipeline + Comfy Model Inspector + Build Gate FIX1",
+  "title": "High-Resolution 4K Pipeline + Comfy Model Inspector + Build Gate FIX1 + Legacy Validator FIX2",
   "complete_update": true,
-  "includes_build_gate_fix": true,
   "files": [
     "main-v197.js",
     "lib/image-intelligence-v197.js",
@@ -10,6 +9,7 @@
     "src/image-intelligence-v197.js",
     "scripts/validate-v197.js",
     "scripts/test-v197-image-intelligence.js",
+    "scripts/validate-v195.js",
     "package.json",
     "nexa.project.json",
     "README-V1.9.7.md"

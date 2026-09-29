@@ -5,7 +5,7 @@
     "type": "electron",
     "version": "1.9.7",
     "application_version": "1.9.7",
-    "workspace_revision": "1.0.75",
+    "workspace_revision": "1.0.76",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,7 +13,7 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-09-28 20:32:14",
+    "updated_at": "2026-09-28 20:47:16",
     "build": "1.9.7",
     "features": [
         "chat-attachments-ui",

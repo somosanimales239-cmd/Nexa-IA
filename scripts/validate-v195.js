@@ -10,8 +10,13 @@ for(const token of ['isVisualCreationIntent','splitPromptSections','extractTechn
 const renderer=fs.readFileSync(path.join(root,'src','image-intelligence-v195.js'),'utf8');if(!renderer.includes('visualCreationIntent')||!renderer.includes('personage')||!renderer.includes('__nexaV195'))throw new Error('renderer intent patch incomplete');
 function reqs(file){if(!fs.existsSync(path.join(root,file)))return[];const src=fs.readFileSync(path.join(root,file),'utf8');return[...src.matchAll(/require\(['"]\.\/(main-v\d+\.js)['"]\)/g)].map(m=>m[1]);}
 function chain(start,target,seen=new Set()){if(start===target)return true;if(!start||seen.has(start)||!fs.existsSync(path.join(root,start)))return false;seen.add(start);return reqs(start).some(next=>chain(next,target,seen));}
-const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));if(pkg.version!=='1.9.5'||pkg.main!=='main-v195.js')throw new Error(`v1.9.5 package entry/version wrong: ${pkg.version} / ${pkg.main}`);if(!chain(pkg.main,'main-v194.js'))throw new Error('v1.9.5 does not chain to v1.9.4');
+const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+const entry=String(pkg.main||'');
+if(!entry||!chain(entry,'main-v195.js'))throw new Error('Current entry does not transitively chain to main-v195.js: '+entry);
+if(!chain('main-v195.js','main-v194.js'))throw new Error('v1.9.5 layer does not chain to v1.9.4');
 for(const script of ['validate:v195','test:v195','validate:v194','test:v194','validate:v193','test:v193'])if(!String(pkg.scripts?.[script]||'').trim())throw new Error('package scripts missing '+script);
 const buildFiles=Array.isArray(pkg?.build?.files)?pkg.build.files.map(String):[];for(const file of ['main-v195.js','main-v194.js','main-v193.js','main-v192.js','main-v191.js','main-v190.js','main-v189.js','main-v188.js','main.js','preload.js'])if(!buildFiles.includes(file))throw new Error('electron-builder missing '+file);
-const project=JSON.parse(fs.readFileSync(path.join(root,'nexa.project.json'),'utf8'));if(String(project.application_version||project.version||'')!=='1.9.5'||String(project.build||'')!=='1.9.5')throw new Error('nexa.project version/build mismatch');
-console.log('Nexa AI v1.9.5 Image Intelligence validation: OK');
+const project=JSON.parse(fs.readFileSync(path.join(root,'nexa.project.json'),'utf8'));
+const active=String(pkg.version||'');
+if(String(project.application_version||project.version||'')!==active||String(project.build||'')!==active)throw new Error(`nexa.project version/build mismatch: ${project.application_version||project.version} / ${project.build} vs ${active}`);
+console.log(`Nexa AI v1.9.5 Image Intelligence layer validation: OK (active entry: ${entry}, package ${pkg.version})`);
