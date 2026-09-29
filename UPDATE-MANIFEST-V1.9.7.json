@@ -1,0 +1,15 @@
+{
+  "version": "1.9.7",
+  "title": "Comfy Model Inspector + Smart Checkpoint Router + High-Resolution 4K Pipeline",
+  "files": [
+    "main-v197.js",
+    "lib/image-intelligence-v197.js",
+    "lib/highres-pipeline-v197.js",
+    "src/image-intelligence-v197.js",
+    "scripts/validate-v197.js",
+    "scripts/test-v197-image-intelligence.js",
+    "package.json",
+    "nexa.project.json",
+    "README-V1.9.7.md"
+  ]
+}
