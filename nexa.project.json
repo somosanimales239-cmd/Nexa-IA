@@ -3,9 +3,9 @@
     "slug": "project-20260920-234017",
     "uuid": "3e5730f3-ca49-43d7-9674-65f402ecc6ca",
     "type": "electron",
-    "version": "1.9.7",
-    "application_version": "1.9.7",
-    "workspace_revision": "1.0.76",
+    "version": "1.9.8",
+    "application_version": "1.9.8",
+    "workspace_revision": "1.0.77",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,8 +13,8 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-09-28 20:47:16",
-    "build": "1.9.7",
+    "updated_at": "2026-09-28 21:46:27",
+    "build": "1.9.8",
     "features": [
         "chat-attachments-ui",
         "drag-drop-images-documents",
@@ -62,6 +62,11 @@
         "smart-checkpoint-router",
         "style-authority-engine",
         "exact-4k-targets",
-        "checkpoint-runtime-disclosure"
+        "checkpoint-runtime-disclosure",
+        "completion-safe-timeout-recovery",
+        "comfy-history-rescue",
+        "adaptive-wait-until-finished",
+        "vram-aware-highres-plan",
+        "soft-progress-heartbeats"
     ]
 }
