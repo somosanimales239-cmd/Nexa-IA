@@ -5,7 +5,7 @@
     "type": "electron",
     "version": "2.0.0",
     "application_version": "2.0.0",
-    "workspace_revision": "1.0.78",
+    "workspace_revision": "1.0.79",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,7 +13,7 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-10-04 18:16:28",
+    "updated_at": "2026-10-04 19:27:21",
     "build": "2.0.0",
     "features": [
         "chat-attachments-ui",
@@ -68,16 +68,13 @@
         "adaptive-wait-until-finished",
         "vram-aware-highres-plan",
         "soft-progress-heartbeats",
-        "nexa-web-control-center",
-        "browser-primary-ui",
-        "forge-webui-api-integration",
-        "forge-model-router-ui",
-        "forge-image-studio",
-        "forge-4k-upscale-api",
-        "web-chat-streaming",
-        "web-attachments",
-        "web-memory",
-        "web-knowledge",
-        "web-system-status"
+        "hosted-public-html-web-ui",
+        "secure-outbound-web-agent",
+        "remote-chat-control",
+        "remote-memory-control",
+        "remote-knowledge-search",
+        "forge-webui-remote-generation",
+        "forge-model-router-from-web",
+        "hosted-attachments-bridge"
     ]
 }

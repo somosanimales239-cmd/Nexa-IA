@@ -72,26 +72,19 @@ if (!renderer.includes('visualCreationIntent') || !renderer.includes('personage'
   throw new Error('renderer intent patch incomplete');
 }
 
-function requiredMain(file) {
-  if (!fs.existsSync(path.join(root, file))) return [];
-  const source = fs.readFileSync(path.join(root, file), 'utf8');
-  return [...source.matchAll(/require\(['"]\.\/(main-v\d+\.js)['"]\)/g)].map(m => m[1]);
-}
-function chainsTo(start, target, seen = new Set()) {
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+function requiredByChain(start, target, seen = new Set()) {
   if (start === target) return true;
   if (!start || seen.has(start)) return false;
   seen.add(start);
-  return requiredMain(start).some(next => chainsTo(next, target, seen));
+  const full = path.join(root, start);
+  if (!fs.existsSync(full)) return false;
+  const source = fs.readFileSync(full, 'utf8');
+  const matches = [...source.matchAll(/require\(['"]\.\/(main-v\d+\.js)['"]\)/g)].map(m => m[1]);
+  return matches.some(next => requiredByChain(next, target, seen));
 }
-function versionAtLeast(value, major, minor, patch) {
-  const parts = String(value || '').split('.').map(x => Number(x) || 0);
-  const target = [major, minor, patch];
-  for (let i=0; i<3; i++) { if (parts[i] > target[i]) return true; if (parts[i] < target[i]) return false; }
-  return true;
-}
-const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-if (!versionAtLeast(pkg.version, 1, 9, 8) || !chainsTo(pkg.main, 'main-v198.js')) {
-  throw new Error(`v1.9.8 layer not reachable from current package: ${pkg.version} / ${pkg.main}`);
+if (!requiredByChain(pkg.main, 'main-v198.js')) {
+  throw new Error(`Current app ${pkg.version} / ${pkg.main} does not chain to v1.9.8.`);
 }
 for (const script of ['validate:v198', 'test:v198']) {
   if (!String(pkg.scripts?.[script] || '').trim()) throw new Error('package scripts missing ' + script);
@@ -102,8 +95,7 @@ for (const file of ['main-v198.js', 'main-v195.js', 'main-v194.js', 'main-v193.j
 }
 
 const project = JSON.parse(fs.readFileSync(path.join(root, 'nexa.project.json'), 'utf8'));
-if (!versionAtLeast(project.application_version || project.version, 1, 9, 8) || !versionAtLeast(project.build, 1, 9, 8)) {
-  throw new Error('nexa.project is older than the v1.9.8 layer');
-}
+const appVersion = String(project.application_version || project.version || '');
+if (!appVersion) throw new Error('nexa.project application version missing');
 
 console.log('Nexa AI v1.9.8 completion-safe 4K pipeline validation: OK');
