@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nexa AI Web Control</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div id="appShell" class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">N</div>
+        <div><strong>Nexa AI</strong><small>Web Control</small></div>
+      </div>
+      <nav class="nav" id="mainNav">
+        <button data-view="chat" class="active"><span>💬</span>Chat</button>
+        <button data-view="images"><span>🖼️</span>Image Studio</button>
+        <button data-view="knowledge"><span>📚</span>Knowledge</button>
+        <button data-view="memory"><span>🧠</span>Memory</button>
+        <button data-view="system"><span>⚙️</span>System</button>
+        <button data-view="settings"><span>🔧</span>Settings</button>
+      </nav>
+      <div class="sidebar-status">
+        <div><span id="backendDot" class="dot"></span><span id="backendText">Nexa backend</span></div>
+        <div><span id="forgeDot" class="dot"></span><span id="forgeText">Forge</span></div>
+      </div>
+      <div class="sidebar-foot">v<span id="versionText">2.0.0</span> · localhost only</div>
+    </aside>
+
+    <main class="main">
+      <section class="view active" data-view-panel="chat">
+        <div class="chat-layout">
+          <aside class="chat-list-panel">
+            <div class="panel-head"><h2>Conversaciones</h2><button id="newChatBtn" class="icon-btn">＋</button></div>
+            <div id="chatList" class="chat-list"></div>
+          </aside>
+          <div class="chat-main">
+            <header class="topbar">
+              <div><h1 id="chatTitle">Nuevo chat</h1><small id="chatMeta">Nexa local</small></div>
+              <div class="top-actions"><button id="deleteChatBtn" class="ghost danger">Eliminar</button></div>
+            </header>
+            <div id="messages" class="messages"></div>
+            <div id="chatStatus" class="status-strip hidden"></div>
+            <div id="attachmentTray" class="attachment-tray"></div>
+            <div class="composer">
+              <label class="attach-btn" title="Adjuntar"><input id="fileInput" type="file" multiple accept="image/*,.pdf,.docx,.txt,.md,.csv,.json" />📎</label>
+              <textarea id="promptInput" rows="1" placeholder="Escribe a Nexa... También puedes pedir una imagen y se enviará a Forge."></textarea>
+              <button id="stopChatBtn" class="ghost hidden">Detener</button>
+              <button id="sendBtn" class="primary">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="images">
+        <header class="topbar standalone">
+          <div><h1>Image Studio</h1><small>Forge WebUI API · controles en la página</small></div>
+          <div class="badge-row"><span id="forgeModelBadge" class="badge">sin modelo</span><span id="forgeProgressBadge" class="badge muted">idle</span></div>
+        </header>
+        <div class="studio-grid">
+          <div class="studio-controls card">
+            <label>Prompt positivo<textarea id="imagePrompt" rows="7" placeholder="Describe la imagen..."></textarea></label>
+            <label>Negative Prompt<textarea id="imageNegative" rows="4" placeholder="blurry, low quality, ..."></textarea></label>
+            <div class="grid-2">
+              <label>Modelo<select id="forgeModelSelect"></select></label>
+              <label>Sampler<select id="forgeSamplerSelect"></select></label>
+              <label>Scheduler<select id="forgeSchedulerSelect"></select></label>
+              <label>Upscaler final<select id="forgeUpscalerSelect"></select></label>
+              <label>Hires upscaler<select id="forgeHiresSelect"></select></label>
+              <label>Preset<select id="imagePreset"><option value="landscape">16:9 horizontal</option><option value="portrait">Vertical</option><option value="square">Cuadrado</option><option value="4k-landscape">4K 3840×2160</option><option value="4k-portrait">4K 2160×3840</option><option value="4k-square">3K cuadrado</option></select></label>
+              <label>Steps<input id="imageSteps" type="number" min="5" max="80" value="28" /></label>
+              <label>CFG<input id="imageCfg" type="number" min="1" max="15" step="0.1" value="5.5" /></label>
+              <label>Denoise<input id="imageDenoise" type="number" min="0.05" max="0.8" step="0.01" value="0.32" /></label>
+              <label>Seed<input id="imageSeed" type="number" value="-1" /></label>
+            </div>
+            <div class="check-row"><label><input id="imageHires" type="checkbox" checked /> Hires Fix</label><label>Hires scale <input id="imageHiresScale" type="number" min="1" max="2" step="0.1" value="1.5" /></label></div>
+            <div class="button-row"><button id="generateImageBtn" class="primary wide">Generar con Forge</button><button id="interruptImageBtn" class="ghost danger">Detener</button></div>
+          </div>
+          <div class="studio-preview card">
+            <div id="imageEmpty" class="empty-preview"><div class="big-icon">✦</div><strong>Resultado de Forge</strong><span>La imagen aparecerá aquí.</span></div>
+            <img id="imagePreview" class="hidden" alt="Imagen generada" />
+            <div id="imageInfo" class="image-info hidden"></div>
+            <a id="downloadImageLink" class="primary link-btn hidden" download>Guardar imagen</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="knowledge">
+        <header class="topbar standalone"><div><h1>Knowledge</h1><small>Busca en el conocimiento local de Nexa</small></div></header>
+        <div class="content-grid">
+          <div class="card">
+            <div class="search-row"><input id="knowledgeQuery" placeholder="Buscar en conocimiento..." /><button id="knowledgeSearchBtn" class="primary">Buscar</button></div>
+            <div id="knowledgeResults" class="results"></div>
+          </div>
+          <div class="card"><h3>Librerías</h3><div id="librariesList" class="simple-list"></div><h3>Objetivos</h3><div id="objectivesList" class="simple-list"></div></div>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="memory">
+        <header class="topbar standalone"><div><h1>Memory</h1><small>Memoria persistente local</small></div></header>
+        <div class="card max-card">
+          <div class="search-row"><textarea id="memoryText" rows="3" placeholder="Nuevo recuerdo..."></textarea><button id="saveMemoryBtn" class="primary">Guardar</button></div>
+          <div id="memoryList" class="memory-list"></div>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="system">
+        <header class="topbar standalone"><div><h1>System</h1><small>Estado de Nexa, Ollama y Forge</small></div></header>
+        <div class="status-cards">
+          <div class="card"><h3>Nexa backend</h3><div id="systemNexa"></div></div>
+          <div class="card"><h3>Ollama</h3><div id="systemOllama"></div><div class="button-row"><button data-engine-action="start" class="ghost">Start</button><button data-engine-action="warm" class="ghost">Warm</button><button data-engine-action="unload" class="ghost">Unload</button></div></div>
+          <div class="card"><h3>Forge</h3><div id="systemForge"></div><button id="refreshForgeBtn" class="ghost">Refresh Forge</button></div>
+          <div class="card"><h3>Recursos</h3><div id="systemStats"></div></div>
+        </div>
+      </section>
+
+      <section class="view" data-view-panel="settings">
+        <header class="topbar standalone"><div><h1>Settings</h1><small>La lógica visual se controla aquí, no en la ventana Electron</small></div></header>
+        <div class="content-grid">
+          <form id="webSettingsForm" class="card settings-form">
+            <h3>Forge WebUI</h3>
+            <label>Forge API URL<input id="forgeBaseUrl" placeholder="http://127.0.0.1:7860" /></label>
+            <div class="grid-2">
+              <label>Default steps<input id="defaultSteps" type="number" min="5" max="80" /></label>
+              <label>Default CFG<input id="defaultCfg" type="number" min="1" max="15" step="0.1" /></label>
+              <label>Hires scale<input id="defaultHiresScale" type="number" min="1" max="2" step="0.1" /></label>
+              <label>Denoise<input id="defaultDenoise" type="number" min="0.05" max="0.8" step="0.01" /></label>
+            </div>
+            <div class="check-row"><label><input id="autoOpenWeb" type="checkbox" /> Abrir esta página al iniciar Nexa</label><label><input id="minimizeDesktop" type="checkbox" /> Minimizar Electron al iniciar</label></div>
+            <button class="primary" type="submit">Guardar configuración web</button>
+          </form>
+          <div class="card setup-card">
+            <h3>Conexión Forge</h3>
+            <p>Forge debe estar ejecutándose con su API habilitada.</p>
+            <code>set COMMANDLINE_ARGS=--api</code>
+            <p>Después abre Forge normalmente. Nexa Web Control se conecta por defecto a <b>127.0.0.1:7860</b>.</p>
+            <button id="testForgeBtn" class="ghost">Probar conexión</button>
+            <div id="forgeTestResult" class="mini-status"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastHost" class="toast-host"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

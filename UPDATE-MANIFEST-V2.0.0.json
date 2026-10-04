@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "title": "Nexa Web Control Center + Forge WebUI Integration",
+  "base": "1.9.8",
+  "architecture": "browser-primary/local-backend",
+  "web_url": "http://127.0.0.1:32146/",
+  "forge_default_url": "http://127.0.0.1:7860",
+  "files": [
+    "main-v200.js",
+    "lib/nexa-web-control-v200.js",
+    "webapp/index.html",
+    "webapp/app.css",
+    "webapp/app.js",
+    "scripts/validate-v200.js",
+    "scripts/test-v200-web-control.js",
+    "scripts/validate-v198.js",
+    "package.json",
+    "nexa.project.json",
+    "README-V2.0.0.md"
+  ]
+}
