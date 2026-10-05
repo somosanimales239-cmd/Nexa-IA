@@ -1,0 +1,14 @@
+{
+  "version": "2.0.3",
+  "title": "Hosted Web Runtime Status + Dashboard Sync Fix",
+  "files": [
+    "main-v203.js",
+    "lib/hosted-web-agent-v203.js",
+    "scripts/validate-v203.js",
+    "scripts/test-v203-hosted-web-sync.js",
+    "scripts/validate-v200.js",
+    "package.json",
+    "nexa.project.json",
+    "README-V2.0.3.md"
+  ]
+}
