@@ -1,7 +1,17 @@
-Nexa AI v1.6.1 Discovery Repair Hotfix
+Nexa AI v2.0.3 — Hosted Web Heartbeat HOTFIX
 
-Overlay these files on top of the v1.6.0 source tree, preserving folders.
-Do NOT delete D:\LocalAI\NexaAI\Data\nexa-knowledge.db.
-The Chrome Browser Bridge v1.1.0 does not need to be updated for this repair.
-After rebuilding/installing, open the existing Toyota Corolla list and click Iniciar / continuar.
-Existing discovery-only NEEDS_REVIEW years with zero configs are automatically returned to QUEUED and retried.
+Exact problem fixed:
+v2.0.3 waited for Forge/Ollama runtime probes BEFORE sending the PC heartbeat.
+When Forge is not installed/offline, that probe can take long enough for the web page
+to mark the PC as offline.
+
+Fix:
+- heartbeat is sent immediately first
+- Forge/Ollama runtime probe runs in background
+- only one runtime probe can run at a time
+- no public_html files need to be changed
+
+Replace:
+  lib/hosted-web-agent-v203.js
+
+Then rebuild/install Nexa AI v2.0.3 and open it.
