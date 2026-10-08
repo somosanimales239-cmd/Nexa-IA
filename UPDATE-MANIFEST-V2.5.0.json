@@ -1,0 +1,48 @@
+{
+  "name": "Nexa AI v2.5.0 Developer Runtime Big Update",
+  "version": "2.5.0",
+  "type": "overlay",
+  "baseline": "Nexa AI v2.0.3",
+  "main_entry_preserved": "main-v203.js",
+  "architecture_preserved": "main-v203.js -> main-v198.js -> existing Nexa layers",
+  "modified_files": [
+    "package.json",
+    "nexa.project.json",
+    "lib/hosted-web-agent-v203.js",
+    "scripts/validate-v203.js"
+  ],
+  "new_files": [
+    "lib/developer-runtime-v250.js",
+    "scripts/validate-v250.js",
+    "scripts/test-v250-developer-runtime.js",
+    "README-V2.5.0.md",
+    "UPDATE-MANIFEST-V2.5.0.json"
+  ],
+  "capabilities": [
+    "controlled local terminal",
+    "Electron Browser Agent",
+    "symbol-aware semantic code index",
+    "file tools with SHA conflict checks and backups",
+    "Allowed Root plus symlink/junction escape protection",
+    "persistent resumable developer workflows",
+    "security scanner with secret redaction",
+    "SQLite/schema inspector",
+    "opt-in backed-up database migrations",
+    "local Git tools with network operations disabled by default",
+    "browser screenshot artifact upload through Hosted Web Agent"
+  ],
+  "defaults": {
+    "developer_enabled": true,
+    "git_network_enabled": false,
+    "database_migrations_enabled": false,
+    "deploy_enabled": false,
+    "browser_sandbox": true,
+    "browser_node_integration": false,
+    "terminal_shell": false
+  },
+  "data_migration": false,
+  "database_replacement": false,
+  "new_npm_dependencies": false,
+  "requires_windows_rebuild": true,
+  "web_followup_required_for_full_chat_dispatch": true
+}

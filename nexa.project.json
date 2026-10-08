@@ -3,9 +3,9 @@
     "slug": "project-20260920-234017",
     "uuid": "3e5730f3-ca49-43d7-9674-65f402ecc6ca",
     "type": "electron",
-    "version": "2.0.3",
-    "application_version": "2.0.3",
-    "workspace_revision": "1.0.85",
+    "version": "2.5.0",
+    "application_version": "2.5.0",
+    "workspace_revision": "1.0.86",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,8 +13,8 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-10-07 01:05:10",
-    "build": "2.0.3",
+    "updated_at": "2026-10-07 23:02:57",
+    "build": "2.5.0",
     "features": [
         "chat-attachments-ui",
         "drag-drop-images-documents",
@@ -78,6 +78,20 @@
         "hosted-attachments-bridge",
         "hosted-runtime-status-heartbeat",
         "hosted-dashboard-compact-sync",
-        "hosted-web-diagnostics-v203"
+        "hosted-web-diagnostics-v203",
+        "developer-runtime-v250",
+        "developer-controlled-terminal",
+        "developer-electron-browser-agent",
+        "developer-semantic-code-index",
+        "developer-persistent-workflows",
+        "developer-job-resume-cancel",
+        "developer-file-tools-with-sha-conflict-guard",
+        "developer-security-scanner",
+        "developer-sqlite-inspector",
+        "developer-optional-safe-migrations",
+        "developer-local-git-tools",
+        "developer-browser-screenshot-artifacts",
+        "developer-allowed-root-guardrails",
+        "developer-automatic-file-backups"
     ]
 }
