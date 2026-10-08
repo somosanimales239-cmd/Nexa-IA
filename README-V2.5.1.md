@@ -1,20 +1,27 @@
-# Nexa AI v2.5.1 — Developer Runtime Stabilization
+# Nexa AI v2.5.1 — COMPLETE ONE UPDATE
 
-Focused Windows runtime stabilization over v2.5.0.
+Single consolidated update over Nexa AI v2.5.0.
 
-- Fixes `.cmd`/`.bat` execution on Windows without enabling an unrestricted shell.
-- Reports which allowlisted commands are actually installed/available in PATH.
-- Keeps generic Terminal allowlisted. Git is executed only through the dedicated controlled `developer.git.run` operations.
-- Fixes the v2.5.0 contradiction where Git was enabled but internally blocked by the Terminal allowlist.
-- Missing tools such as PHP now produce a clear `not installed / PATH` diagnostic.
-- Preserves `main-v203.js`, Hosted Web architecture, Ollama/Qwen/Forge, Browser Agent, file tools, indexes and persistent jobs.
-## App Builder compatibility fix
+Includes all v2.5.1 changes and the fixes discovered during App Builder/GitHub validation:
 
-This corrected package replaces one JavaScript regular-expression literal in `lib/developer-runtime-v251.js` with parser-safe character checks. The original JavaScript was valid in Node, but Nexa App Builder Pro's conservative delimiter scanner reported `Unexpected closing delimiter ]`.
+- Windows `.cmd` / `.bat` controlled execution stabilization.
+- Runtime command availability reporting.
+- Dedicated controlled Git runner; Git no longer passes through the generic Terminal allowlist.
+- Clear missing-tool diagnostics (for example PHP not installed / not in PATH).
+- App Builder conservative delimiter-scanner compatibility fix in `developer-runtime-v251.js`.
+- Forward-compatible v2.5.0 historical validator so newer compatible runtimes do not fail because the old validator expects exactly v2.5.0.
+- Forward-compatible v2.5.1 validator for the same historical-validation model.
+- Preserves `main-v203.js`, the `main-v203 -> main-v198` chain, Hosted Web Agent architecture, Ollama/Qwen/Forge, Browser Agent, file tools, code index, database tools and persistent jobs.
 
-Validation on this corrected package:
-- `node --check` PASS on every changed/new JavaScript file.
-- Nexa App Builder delimiter/regex compatibility scan PASS on every changed/new JavaScript file.
-- `validate-v251` PASS.
-- `test-v251-developer-runtime` PASS.
+## App Builder import
 
+This archive intentionally has one neutral top-level folder: `NexaUpdate/`.
+Nexa App Builder Pro should strip that wrapper and target paths such as:
+
+- `package.json`
+- `lib/developer-runtime-v251.js`
+- `lib/hosted-web-agent-v203.js`
+- `scripts/validate-v250.js`
+- `scripts/validate-v251.js`
+
+Do not apply if those files appear flattened into the repository root without their `lib/` or `scripts/` directories.

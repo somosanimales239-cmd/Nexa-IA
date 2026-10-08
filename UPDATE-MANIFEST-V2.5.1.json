@@ -1,11 +1,13 @@
 {
   "version": "2.5.1",
   "base": "2.5.0",
-  "type": "update-overlay",
+  "type": "single-consolidated-update",
+  "app_builder_wrapper": "NexaUpdate",
   "changed": [
     "package.json",
     "nexa.project.json",
-    "lib/hosted-web-agent-v203.js"
+    "lib/hosted-web-agent-v203.js",
+    "scripts/validate-v250.js"
   ],
   "new": [
     "lib/developer-runtime-v251.js",
@@ -13,5 +15,54 @@
     "scripts/test-v251-developer-runtime.js",
     "README-V2.5.1.md"
   ],
-  "notes": "Windows Developer Runtime stabilization; corrected for Nexa App Builder delimiter/regex scanner compatibility; no main entry change."
+  "fixes_included": [
+    "windows-cmd-bat-spawn",
+    "git-dedicated-runner",
+    "command-availability",
+    "app-builder-delimiter-parser-compat",
+    "historical-v250-forward-compat-validator",
+    "historical-v251-forward-compat-validator"
+  ],
+  "files": [
+    {
+      "path": "README-V2.5.1.md",
+      "sha256": "ec1f2c59672cd63ec243ba897035894283b6e31937eb442c3f70bf4d10d8f5ee",
+      "bytes": 1402
+    },
+    {
+      "path": "lib/developer-runtime-v251.js",
+      "sha256": "b997fdb63cd82016b6ebdb803f267c3139a756c89b503482602752cf868793dd",
+      "bytes": 52632
+    },
+    {
+      "path": "lib/hosted-web-agent-v203.js",
+      "sha256": "c02ab3c17add8011eb3c1d25326a64ee7511c95cf8ed27346ba0faaa4f41f8e4",
+      "bytes": 24755
+    },
+    {
+      "path": "nexa.project.json",
+      "sha256": "e0a13be4d439dbbc0de8aea59a5121bdcde1305db94bd1616027bc346dc49f04",
+      "bytes": 3711
+    },
+    {
+      "path": "package.json",
+      "sha256": "19b2bc69cee803f211bfd2bce1135d781e6a2c994e385c7175250078f8936c7a",
+      "bytes": 7939
+    },
+    {
+      "path": "scripts/test-v251-developer-runtime.js",
+      "sha256": "63c1e1ce02e157b9176ab3a73ef69dabf43a46181704cf126e73c27bd8a294a9",
+      "bytes": 1629
+    },
+    {
+      "path": "scripts/validate-v250.js",
+      "sha256": "6dbad513a419c5d998e5ec3cf4cf37214ff0418c9eeb015d8822999a2308a288",
+      "bytes": 5214
+    },
+    {
+      "path": "scripts/validate-v251.js",
+      "sha256": "e559f60e9ed41ab9fbb3910fa6a82acaf5e2d55e6e3a3ceca2016ded6057f307",
+      "bytes": 3926
+    }
+  ]
 }
