@@ -1,0 +1,17 @@
+{
+  "version": "2.5.1",
+  "base": "2.5.0",
+  "type": "update-overlay",
+  "changed": [
+    "package.json",
+    "nexa.project.json",
+    "lib/hosted-web-agent-v203.js"
+  ],
+  "new": [
+    "lib/developer-runtime-v251.js",
+    "scripts/validate-v251.js",
+    "scripts/test-v251-developer-runtime.js",
+    "README-V2.5.1.md"
+  ],
+  "notes": "Windows Developer Runtime stabilization; corrected for Nexa App Builder delimiter/regex scanner compatibility; no main entry change."
+}

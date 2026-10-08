@@ -3,9 +3,9 @@
     "slug": "project-20260920-234017",
     "uuid": "3e5730f3-ca49-43d7-9674-65f402ecc6ca",
     "type": "electron",
-    "version": "2.5.0",
-    "application_version": "2.5.0",
-    "workspace_revision": "1.0.86",
+    "version": "2.5.1",
+    "application_version": "2.5.1",
+    "workspace_revision": "1.0.88",
     "managed_by": "Nexa App Builder Pro",
     "created_at": "2026-09-20 23:40:17",
     "rules": {
@@ -13,8 +13,8 @@
         "backup_before_changes": true,
         "rollback_enabled": true
     },
-    "updated_at": "2026-10-07 23:02:57",
-    "build": "2.5.0",
+    "updated_at": "2026-10-08 11:12:27",
+    "build": "2.5.1",
     "features": [
         "chat-attachments-ui",
         "drag-drop-images-documents",
@@ -92,6 +92,10 @@
         "developer-local-git-tools",
         "developer-browser-screenshot-artifacts",
         "developer-allowed-root-guardrails",
-        "developer-automatic-file-backups"
+        "developer-automatic-file-backups",
+        "developer-runtime-v251",
+        "developer-windows-cmd-wrapper-stabilization",
+        "developer-command-availability",
+        "developer-safe-internal-git-runner"
     ]
 }
