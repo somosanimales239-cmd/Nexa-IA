@@ -1,0 +1,19 @@
+{
+  "version": "2.6.0",
+  "title": "Dedicated qwen2.5-coder:7b Developer Brain",
+  "changed_files": [
+    "package.json",
+    "nexa.project.json",
+    "lib/hosted-web-agent-v203.js"
+  ],
+  "new_files": [
+    "lib/developer-runtime-v260.js",
+    "scripts/validate-v260.js",
+    "scripts/test-v260-developer-ai.js",
+    "README-V2.6.0.md",
+    "UPDATE-MANIFEST-V2.6.0.json"
+  ],
+  "developer_model": "qwen2.5-coder:7b",
+  "normal_chat_model_unchanged": true,
+  "requires_windows_rebuild": true
+}
