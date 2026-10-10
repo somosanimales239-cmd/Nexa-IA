@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..'),read=rel=>fs.readFileSync(path.join(root
 const pkg=JSON.parse(read('package.json')),project=JSON.parse(read('nexa.project.json'));
 assert.equal(pkg.version,'2.8.1');assert.equal(pkg.main,'main-v203.js');
 for(const k of ['version','application_version','build'])assert.equal(project[k],pkg.version);
-for(const rel of ['main-v203.js','lib/developer-autonomous-v281.js','scripts/test-developer-autonomous-v281.js','scripts/test-developer-web-v281.js','scripts/validate-v260.js','scripts/test-developer-autonomous-v281-recovery.js'])assert(fs.existsSync(path.join(root,rel)),'Missing: '+rel);
+for(const rel of ['main-v203.js','lib/developer-autonomous-v281.js','scripts/test-developer-autonomous-v281.js','scripts/test-developer-web-v281.js','scripts/validate-v260.js','scripts/test-developer-autonomous-v281-recovery.js','scripts/test-developer-autonomous-v281-transactional.js'])assert(fs.existsSync(path.join(root,rel)),'Missing: '+rel);
 const main=read('main-v203.js'),agent=read('lib/developer-autonomous-v281.js');
 assert(main.includes("require('./main-v198.js')"),'Electron stable chain was modified');
 assert(main.includes("require('./lib/developer-autonomous-v281').install(HostedWebAgent)"),'Active agent was not installed');
@@ -18,7 +18,8 @@ assert(pkg.build.files.includes('lib/**/*'),'Windows packager missing Developer 
 assert(project.features.includes('developer-autonomous-v281-reliability'));
 assert(agent.includes('verifiedSingleAppendGoal('),'Append recovery guard missing');
 assert(agent.includes('append-already-applied'),'Idempotent append recovery missing');
+for (const marker of ['async function transactionalEdit(', 'function obviousPhpBoundaryError(', 'function verifyTaskPlacement(', 'LINT_REAL:', 'TEXTO_DUPLICADO:', 'const unverifiedExecutable=']) assert(agent.includes(marker),'Transactional guard missing: '+marker);
 // Run this addition from the existing validate:v281 gate. Never remove the old
 // v281 tests, whose expectations and compatibility remain important.
-execFileSync(process.execPath,['--test','scripts/test-developer-autonomous-v281-recovery.js'],{cwd:root,stdio:'inherit',timeout:45000});
+execFileSync(process.execPath,['--test','scripts/test-developer-autonomous-v281-recovery.js','scripts/test-developer-autonomous-v281-transactional.js'],{cwd:root,stdio:'inherit',timeout:90000});
 console.log('Nexa 2.8.1 integration, version synchronization, recovery and stable Electron chain: OK');

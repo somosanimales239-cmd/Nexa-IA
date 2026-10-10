@@ -1,60 +1,72 @@
-NEXA AI v2.8.1 — RECUPERACION APPEND / BUILD #147
-FUENTE: GitHub Nexa-IA; commit a7811043e6a06e3b478db885947440bc913a210b
-BASADO EN: GitHub Actions #61, Build 147 v2.8.1, compilacion exitosa.
+NEXA AI WINDOWS 2.8.1 — DEVELOPER TRANSACCIONAL / RECUPERACIÓN PHP
+10 de octubre de 2026
 
-NO REEMPLAZAR LA INSTALACION MANUALMENTE. NO CAMBIAR ARCHIVOS DEL DISCO D:.
+BASE CONFIRMADA: GitHub somosanimales239-cmd/Nexa-IA, commit 590fa1c4dca991d9ed5b8fa6ba5c2e863de7ec52,
+GitHub Actions Run #62, Build #148 SUCCESS. El paquete respeta la versión 2.8.1.
 
-Windows (NEXA_V281_RECOVERY_WINDOWS_BUILD147_COMPLETO.zip):
-- Es un paquete CONSOLIDADO de fuentes Electron del Build #147 y del controlador
-  corregido. No es un instalador .EXE. Cargar como actualizacion de archivos
-  en Nexa App Builder Pro, sobre el repositorio Nexa-IA MAIN correspondiente al
-  Build #61/147, y solicitar nuevo build Windows por GitHub Actions.
-- Preserva el package.json COMPLETO, nexa.project.json, package-lock.json,
-  workflow de GitHub y validadores originales presentes en MAIN.
-- NO contiene package.json porque el extraido del instalador fue reducido por
-  electron-builder y NO debe reemplazar el package.json completo de GitHub.
-- Incluye scripts/validate-v281-release.js actualizado y
-  scripts/test-developer-autonomous-v281-recovery.js con 5 regresiones nuevas.
-- Los archivos no relacionados con el Developer provienen del mismo EXE Build
-  #147, sin diseno ni logica nueva intencional.
+DESTINO: Nexa App Builder Pro -> actualización de FUENTES para el repositorio existente.
+NO es un ejecutable .EXE y NO se coloca en public_html ni directamente en D:\LocalAI.
+Este es UN paquete consolidado de fuentes de Windows. Para compilar, necesita el
+repositorio existente (incluido su package.json, package-lock.json, workflow GitHub
+y nexaproject.json). No debe usarse para iniciar un repositorio vacío.
 
-Web (NEXA_V281_RECOVERY_HOSTINGER_WEB.zip):
-- Basado en el ZIP Nexa AI Web enviado en esta conversacion.
-- Unicamente archivos PHP/JS cambiados; NUNCA datos ni bases SQLite.
-- Actualiza index.php para bust de cache del bridge y el workbench acepta
-  runtimes 2.5.1/2.6.0.
-- La web permite descargar explicitamente un ZIP PROVISIONAL de trabajo fallido;
-  sigue rechazando declararlo como completo y exige confirmacion.
+PROBLEMA REPRODUCIDO:
+Qwen hacía siete inserciones del texto 'Sistema de clientes administrado por Nexa AI'
+en clientes.php, después de un <?php page_footer(); sin cierre. Se entregó un ZIP
+provisional con código que daba error PHP (unexpected token '<').
 
-CORRECCION DEL CONTROLADOR:
-1. Append duplicado ya aplicado no contabiliza como accion invalida.
-2. Repeticiones guardadas en la copia se revisan contra el objetivo.
-3. Una solicitud literal y sencilla de agregar linea al final puede concluir
-   con status review_required si se prueba la condicion concreta en archivo real.
-4. Tareas complejas NO se dan por completas por un simple append.
-5. ZIP de archivos provisionales puede conservarse y revisarse con advertencia.
-6. El proyecto ORIGINAL nunca se escribe desde el agente.
+CORRECCIÓN EN lib/developer-autonomous-v281.js:
+- Todas las ediciones nuevas se comprueban inmediatamente, antes de aceptarse.
+- Si se detecta PHP inválido, se revierte SOLO esa edición en la copia temporal.
+- Se protege el archivo original en D:\Projects.
+- Se rechazan duplicaciones de frases literales pedidas en UI, aunque Qwen cambie
+  la etiqueta HTML entre reintentos.
+- Se rechaza el texto solicitado cuando queda después de page_footer() en páginas
+  PHP del patrón afectado; Qwen recibe error real y se le pide reemplazo exacto.
+- Se evitan certificados engañosos: si PHP CLI no existe en Windows, un archivo PHP
+  queda con sintaxis NO VERIFICADA y el trabajo es incompleto.
+- Cuando PHP CLI está disponible, el agente ejecuta php -l después de cada edición,
+  y revierte cualquier error antes de continuar.
+- Las tareas con código cambiado siguen siendo candidatas a revisión; no se
+  certifican pruebas funcionales que no se hayan ejecutado.
+- Sólo qwen2.5-coder:7b es el motor de Developer.
 
-QA DE ESTA ENTREGA:
-- 5 pruebas nuevas simulando respuestas Qwen: aprobadas.
-- Node syntax check: 73 archivos JS del paquete fuente, 0 fallos.
-- PHP lint: 49 archivos PHP del backup Nexa Web, 0 fallos.
-- Comprobaciones de integridad de origen app.asar mediante hashes SHA-256.
-- ZIP generado y verificado como contenedor valido.
+SEGURIDAD Y PRESERVACIÓN:
+No se modifican Chat, Image Studio, Knowledge, Web Intelligence ni Browser Bridge.
+No se pide cambiar la página Hostinger: su gate de PHP ya se introdujo previamente.
+No se tocan DB, conversaciones, credenciales ni el proyecto original.
+La versión declarada permanece 2.8.1 para respetar la instalación y la web actuales.
 
-NO SE HA PROBADO EN ESTE ENTORNO:
-- Nuevo instalador Electron Windows ni GitHub Actions posterior a esta entrega.
-- Ollama real del usuario con Qwen local; las pruebas usan respuestas simuladas.
-- UI de Hostinger desplegada, permisos y red reales.
-No es correcto afirmar que el Developer autonomo multiarchivo ha sido certificado.
+PRUEBAS AÑADIDAS (scripts/test-developer-autonomous-v281-transactional.js):
+1. HTML inválido después de page_footer -> rechazado, copia restaurada.
+2. Qwen reintenta con replace correcto -> PHP válido, una sola etiqueta, ZIP.
+3. Siete reintentos de diferentes wrappers HTML -> nunca crean siete copias.
+4. Duplicado semántico aunque php -l pase -> rechazado y rollback.
+5. Sin php.exe disponible -> NO marcado como certificado, ZIP provisional.
+6. Cambio JS de regresión sigue funcionando; modelo Qwen exclusivo.
+5 pruebas anteriores de recuperación siguen activas. Total 11 pruebas de
+regresión adicionales; integradas en scripts/validate-v281-release.js.
 
-ORDEN PARA INSTALAR:
-1. Respaldar cualquier cambio en Hostinger y GitHub.
-2. En Nexa App Builder Pro cargar el ZIP Windows consolidado sobre el repositorio
-   ya existente. Revisar diffs; compilar en GitHub Actions. NO instalar una
-   compilacion fallida.
-3. Descargar e instalar el EXE de un nuevo build EXITOSO.
-4. Subir solo los tres archivos del ZIP Hostinger a public_html respetando rutas.
-5. Recargar web con Ctrl+F5; comprobar estado agente y hacer prueba README
-   primero, sin modificar el proyecto original.
-6. Si falla, compartir log y trabajo, no repetir instalaciones a ciegas.
+LIMITACIONES IMPORTANTES:
+Las 11 pruebas utilizan acciones controladas simuladas de Qwen, no una sesión real
+con tu Ollama. No pude compilar un instalador Electron para Windows aquí.
+El paquete se debe subir a GitHub con App Builder y compilar. El EXE se instala
+SOLO si Github Actions termina correctamente.
+Si PHP CLI no existe en Windows, el agente bloquea la certificación de sintaxis;
+una revisión PHP de Hostinger puede ayudar, pero no sustituye php -l local en
+el motor actual. No consideres el ZIP provisional apto para instalar.
+
+PROCEDIMIENTO:
+1. Respalda el repositorio y confirma que la base sea Build #148 / commit 590fa1c4.
+2. Abre Nexa App Builder Pro, carga este ZIP en la actualización de Windows.
+3. Comprueba que las rutas coinciden con el repositorio y genera UN nuevo build.
+4. Revisa que los validadores/test y electron-builder concluyen sin fallar.
+5. Descarga el nuevo instalador solamente tras SUCCESS, instala normalmente.
+6. En Nexa Web, prueba primero el mismo cambio en clientes.php sobre una COPIA.
+7. Acepta el ZIP solo si la pantalla muestra PHP syntax_checked y el resultado
+   de proyecto se revisó. Para pruebas sin PHP CLI, incomplete es un resultado
+   seguro, pero no significa que el cambio se completó.
+
+NO instalar versiones parciales ni interpretar Build #148 como validación de este
+cambio nuevo. Nuevos tests corren en CI, pero la validación final requiere Ollama
+real de tu Windows.
