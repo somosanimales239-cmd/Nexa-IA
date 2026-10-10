@@ -1,0 +1,80 @@
+
+> nexa-ai-local@2.7.0 test:v270
+> node --check lib/developer-autonomous-v270.js && node --test scripts/test-developer-autonomous-v270.js
+
+TAP version 13
+# Subtest: rutas seguras bloquean traversal, secretos y binarios
+ok 1 - rutas seguras bloquean traversal, secretos y binarios
+  ---
+  duration_ms: 1.514301
+  type: 'test'
+  ...
+# Subtest: JSON de acción aislado, sin aceptar instrucciones markdown
+ok 2 - JSON de acción aislado, sin aceptar instrucciones markdown
+  ---
+  duration_ms: 0.385952
+  type: 'test'
+  ...
+# Subtest: copia privada excluye credenciales y preserva originales
+ok 3 - copia privada excluye credenciales y preserva originales
+  ---
+  duration_ms: 9.373732
+  type: 'test'
+  ...
+# Subtest: multiacción Qwen: read, replace y finish produce candidato Node check
+ok 4 - multiacción Qwen: read, replace y finish produce candidato Node check
+  ---
+  duration_ms: 49.448941
+  type: 'test'
+  ...
+# Subtest: errores de formato de Qwen interrumpen sin fabricar resultados
+ok 5 - errores de formato de Qwen interrumpen sin fabricar resultados
+  ---
+  duration_ms: 1.882846
+  type: 'test'
+  ...
+# Subtest: repetición exacta de Qwen se detiene
+ok 6 - repetición exacta de Qwen se detiene
+  ---
+  duration_ms: 2.675271
+  type: 'test'
+  ...
+# Subtest: bloqueo de cambios sobre archivos existentes usando write
+ok 7 - bloqueo de cambios sobre archivos existentes usando write
+  ---
+  duration_ms: 0.967107
+  type: 'test'
+  ...
+# Subtest: crea ZIP válido de sólo cambios, con CRC y nombres
+ok 8 - crea ZIP válido de sólo cambios, con CRC y nombres
+  ---
+  duration_ms: 0.429868
+  type: 'test'
+  ...
+# Subtest: instalación intercepta solo developer.agent.* y delega los demás
+ok 9 - instalación intercepta solo developer.agent.* y delega los demás
+  ---
+  duration_ms: 3.30628
+  type: 'test'
+  ...
+# Subtest: artefacto por fragmentos con SHA verificado, sin filtrar archivos externos
+ok 10 - artefacto por fragmentos con SHA verificado, sin filtrar archivos externos
+  ---
+  duration_ms: 49.695152
+  type: 'test'
+  ...
+# Subtest: lint detecta JS inválido y Qwen puede repararlo en máximo dos ciclos
+ok 11 - lint detecta JS inválido y Qwen puede repararlo en máximo dos ciclos
+  ---
+  duration_ms: 70.590339
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 239.885269

@@ -1,0 +1,72 @@
+NEXA AI DEVELOPER AUTÓNOMO v2.7.0 — CANDIDATO DE RELEASE
+Fecha: 2026-10-09
+
+IMPORTANTE: Paquete creado desde código fuente GitHub main (version package 2.6.0), NO desde el EXE instalado v2.5.1.
+No se han modificado los equipos del usuario, su aplicación instalada, ni los repositorios remotos.
+No equivale a un instalador compilado y no es garantía de funcionamiento real en Windows.
+
+ESTRUCTURA DEL RELEASE:
+1. NEXA_V270_APP_BUILDER_SOLO_4_ARCHIVOS.zip
+   Subir exclusivamente ESTE zip a Nexa App Builder Pro, utilizando Stage / Apply / Build.
+   Archivos: package.json, main-v203.js, lib/developer-autonomous-v270.js,
+             scripts/test-developer-autonomous-v270.js
+   Basado en GitHub main Nexa-IA v2.6.0. NO aplicar a código base distinto.
+
+2. NEXA_V270_HOSTINGER_WEB_V3800_SOLO_2_ARCHIVOS.zip
+   Solo si la página en Hostinger coincide EXACTAMENTE con el baseline index.php
+   SHA256: 356b203f238d8efd3c515c4b0caae5e967e072ed52dbbdd290e118b757e10124
+   Archivos: index.php y assets/developer-chat-bridge.js
+   Se añade UN script al final de index.php, sin reescribir app.js.
+   Si la web fue actualizada después de public_html (1)(2).zip, NO sobreescribir index.php.
+   Si tu web YA carga assets/developer-chat-bridge.js (v3.19), usar únicamente
+   el bridge v270; no sobreescribir su index.php.
+
+QUÉ HACE EL MOTOR:
+- Solo intercepta developer.agent.status/run/cancel/artifact.
+- Chat normal, Image Studio y herramientas Developer tradicionales conservan
+  su propia ruta original, sin cambios de proveedor/modelo.
+- Modelo Developer fijo a Ollama http://127.0.0.1:11434, qwen2.5-coder:7b.
+- Protocolo UNA acción JSON por llamada: read / replace / write / finish.
+- Límite de 36 acciones, 15 minutos globales, 75s por respuesta Ollama.
+- Detecta 3 acciones idénticas, rechaza formatos malos y limita errores.
+- Crea una copia del proyecto bajo DeveloperRuntime/autonomous-v270/<job>/workspace;
+  no modifica archivos del proyecto original.
+- Rechaza traversal de rutas, extensiones binarias, enlaces simbólicos y secretos comunes.
+- Ejecuta sintaxis PHP y Node para cambios; permite npm test sólo con autorización.
+- Hasta DOS intentos de reparar errores reales de sintaxis.
+- Genera ZIP de archivos cambiados, descargado por fragmentos con SHA256.
+- Nunca declara QA funcional o regresión inexistente.
+
+ESTADO QA:
+- npm run test:v270: 11/11 pruebas automatizadas Node PASAN (sin depender de PHP en GitHub Actions).
+- node --check main-v203.js: PASA.
+- node --check lib/developer-autonomous-v270.js: PASA.
+- node --check assets/developer-chat-bridge.js: PASA.
+- php -l index.php Hostinger v3800: PASA (comprobado localmente).
+- NO ejecutamos Nexa Windows 2.5.1 ni Electron real aquí.
+- NO ejecutamos el repositorio completo con npm run validate; solo hay copia parcial.
+- NO se ha probado npm test de un proyecto de usuario en Windows; se requiere aprobación explícita.
+- NO se ejecutó el Qwen real en el PC del usuario: se utilizó simulación controlada.
+- NO se realizaron pruebas funcionales reales de PHP + SQLite en Windows.
+- NO se ha verificado el App Builder actual ni instalación del nuevo EXE.
+
+SEGURIDAD DE DESPLIEGUE:
+- NO instalar el nuevo EXE sobre la aplicación estable sin verificar primero el build
+  y hacer una prueba en carpeta/perfil separado.
+- Mantener v2.5.1 Build 142 como vía de retorno y preservar la carpeta Data.
+- No combinar con updates viejos v3.9–v3.19 ni reemplazar archivos ajenos.
+- Si cambia el baseline del App Builder o Hostinger, detener y conciliar, no forzar.
+
+CÓMO PROBAR LA RUTA NUEVA (tras compilar en entorno separado):
+1. Comprobar Developer Runtime habilitado y Allowed Roots con D:\Projects.
+2. Ollama local debe mostrar qwen2.5-coder:7b instalado.
+3. Nexa Web admin > elegir proyecto local COPIA en D:\Projects y modo Local/Hybrid.
+4. Enviar una tarea PEQUEÑA y verificable, por ejemplo cambiar un texto de prueba.
+5. Revisar pasos Qwen, ZIP con cambios y que la carpeta original sea idéntica.
+6. Solo después probar la tarea compleja de licencia + selfie.
+
+CONDICIÓN DE ENTREGA:
+Este candidato habilita el motor y el enlace, pero NO ESTÁ CERTIFICADO COMO RELEASE
+INSTALABLE AÚN. Las pruebas reales de Ollama + Windows + Hostinger están pendientes.
+No volver a hacer una cadena de parches: tratar cualquier fallo como bloqueo hasta
+completar el conjunto de QA y conciliar la versión instalada.
