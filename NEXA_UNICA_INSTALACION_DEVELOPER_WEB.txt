@@ -1,0 +1,73 @@
+NEXA WINDOWS 2.8.1 — ÚNICA ACTUALIZACIÓN CONSOLIDADA DE CONTROL WEB
+10-oct-2026 · Proyecto GitHub: somosanimales239-cmd/Nexa-IA
+Base de integración: commit d05a56003fba12a23f68b687bc510fa2d58349d1 (Actions #64 EXITOSO antes de esta actualización)
+
+INSTALACIÓN — ÚNICO ZIP WINDOWS
+1. No cambies tu sitio principal ni sobrescribas Chat, Image Studio ni archivos de bases de datos.
+2. Importa ESTE ÚNICO ZIP como actualización de código en Nexa App Builder Pro sobre el
+   repositorio Nexa-IA existente (base recomendada d05a560...). Conserva los archivos
+   originales del repositorio que NO están incluidos en este ZIP, como package.json,
+   package-lock.json, .github/workflows, scripts anteriores y nexa.project.json.
+3. Inspecciona la lista de cambios antes de confirmar la actualización del repositorio.
+4. Ejecuta la compilación GitHub Actions de Windows y NO instales el EXE si falla un gate.
+5. Instala el EXE solo tras un build correcto; reinicia Nexa Windows.
+6. Usa la COPIA de Nexa AI Web con el Web Control Center instalado (Developer v2)
+   y el mismo puente HTTPS/cola de trabajos para probar la conexión real.
+
+QUÉ ESTÁ INCLUIDO
+- lib/developer-webv2-bridge.js: protocolo permanente 'nexa-developer-web-control/3.0',
+  soporte de webv2.capabilities, workspace.create/read/edit/qa/package/artifact/status,
+  copia aislada, hashes SHA-256, rechazo de cambios inválidos y ZIP por fragmentos.
+- main-v203.js: instala el bridge DESPUÉS de v281, sin romper rutas de Chat e imágenes.
+- main-v203.js: segundo Hosted Web Agent opcional, si existe una URL distinta HTTPS
+  con token en agent.json; el agente original conserva su propia URL.
+- scripts/validate-v281-release.js: añade los gates de las nuevas pruebas a los existentes.
+- scripts/test-developer-webv2-control.js y test-developer-webv2-boot.js: pruebas automáticas.
+- Código existente de Nexa Windows preservado como base consolidada.
+
+MODELO
+El nuevo bridge exige exclusivamente qwen2.5-coder:7b para developer.ai.generate;
+Chat e imágenes no se ven afectados por este control de modelos.
+
+CONTROL EN LA WEB
+Nexa Developer Web v2 existente controla las 12 áreas: modelo, herramientas, proyectos,
+planificación, tiempos, memoria, edición, QA, reparación, evaluación, entrega, seguimiento.
+Los trabajos en Web v2 usan developer.ai.generate y herramientas developer.* que ya
+están presentes en el runtime y que este paquete conserva. El nuevo protocolo webv2
+prepara operaciones y laboratorios locales adicionales para futuras mejoras WEB.
+
+CONECTAR LA COPIA SIN DESCONECTAR LA WEB ORIGINAL (OPCIONAL)
+Si el Nexa Windows actual sigue unido a la página original y quieres mantenerla,
+puedes añadir una segunda conexión OPCIONAL en el archivo local HostedWeb/agent.json.
+Necesitas conocer la URL HTTPS real de la COPIA y el token real emitido por ella.
+Conserva las claves originales 'serverUrl' y 'agentToken'; añade:
+  "developerWebServerUrl": "https://DOMINIO-REAL-DE-LA-COPIA/RUTA-BASE",
+  "developerWebAgentToken": "TOKEN-REAL-DE-LA-COPIA"
+No reemplaces el JSON entero, y no publiques el token. Reinicia Nexa Windows después.
+El conector secundario solo se inicia cuando HTTPS, URL distinta y token de al menos
+20 caracteres se verifican; en caso contrario el agente original sigue como antes.
+No es necesaria una recompilación para cambiar estas direcciones/tokens.
+
+LIMITACIONES HONESTAS
+- No se ha ejecutado Qwen en la GPU del usuario ni instalado el EXE en su Windows.
+- El Developer Web v2 actual edita SOBRE TODO copias importadas a Hostinger y utiliza
+  herramientas de Windows para lectura/inspección. El protocolo Windows v3 ya ofrece
+  laboratorios locales; la interfaz Web v2 NO expone todavía todos esos comandos nuevos.
+  Futuras ampliaciones de esa interfaz podrán usar el protocolo estable sin EXE nuevo.
+- Las comprobaciones PHP requieren PHP CLI EN WINDOWS para el laboratorio local;
+  si no existe, el estado debe indicar 'no verificado'. Web tiene su parser propio.
+- SQLite en Windows permite inspección a través de developer.db.inspect cuando el
+  Runtime lo soporta; migraciones en el proyecto original no se habilitan aquí.
+- Las pruebas funcionales de cualquier proyecto no se pueden certificar solo con
+  50 pruebas unitarias del agente. Deben ejecutarse en copia real y con dependencias.
+- Los límites locales de permisos, rutas y ejecución son controles de seguridad
+  necesarios. Los parámetros normales de orquestación permanecen controlados en la web.
+- Este ZIP es overlay de FUENTES para el repositorio y App Builder Pro; no es EXE
+  independiente ni contiene el resto del repositorio, que ya existe en GitHub.
+
+RESULTADOS REPRODUCIBLES DEL ENTORNO ACTUAL
+Node.js v22.16.0, PHP 8.4.24.
+50 pruebas en 5 suites: PASS 50, FAIL 0.
+Todos los archivos JS de la entrega: sintaxis correcta.
+Archivo ZIP: CRC e integridad SHA-256 verificados durante empaquetado.
+GitHub Actions real para ESTA NUEVA ENTREGA: PENDIENTE, no se debe asumir éxito.

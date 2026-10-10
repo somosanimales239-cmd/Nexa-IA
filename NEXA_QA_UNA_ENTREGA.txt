@@ -1,0 +1,9 @@
+NEXA WINDOWS WEB CONTROL CONSOLIDADO — QA LOCAL
+Código base: GitHub main d05a56003fba12a23f68b687bc510fa2d58349d1
+Node v22.16.0
+50 pruebas automáticas PASS/0 FAIL: ver scripts/test-developer-*.js
+Se conservan 34 tests v281 previos, más 14 webv2 y 2 dual endpoint.
+JS: todas las fuentes del ZIP comprobadas con node --check.
+IMPORTANTE: GitHub Actions/EXE instalador/PC del usuario/Qwen real: NO PROBADOS.
+Estas pruebas no certifican la autonomía en proyectos desconocidos.
+Web Developer v2 ya fue entregado por separado en conversación anterior; este paquete es ÚNICAMENTE el update Windows.

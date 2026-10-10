@@ -10,6 +10,8 @@ for(const rel of ['main-v203.js','lib/developer-autonomous-v281.js','scripts/tes
 const main=read('main-v203.js'),agent=read('lib/developer-autonomous-v281.js');
 assert(main.includes("require('./main-v198.js')"),'Electron stable chain was modified');
 assert(main.includes("require('./lib/developer-autonomous-v281').install(HostedWebAgent)"),'Active agent was not installed');
+assert(main.includes("require('./lib/developer-webv2-bridge').install(HostedWebAgent)"),'Web Developer v2 bridge not loaded');
+assert(fs.existsSync(path.join(root,'lib/developer-webv2-bridge.js')),'Missing website-driven executor');
 assert(main.includes("version: '2.8.1'"),'Active agent version mismatch');
 for(const fragment of ["const VERSION = '2.8.1'", "const MODEL = 'qwen2.5-coder:7b'", "type==='developer.agent.status'", "type==='developer.agent.report'", 'function readReport(', 'async function runAgent(', 'BUILD_ID', 'const SYSTEM=['])assert(agent.includes(fragment),'Missing: '+fragment);
 for(const script of ['validate:v281','test:v281','validate:v280','test:v280','validate:v260','test:v260'])assert(pkg.scripts[script],'Missing gate '+script);
@@ -21,5 +23,5 @@ assert(agent.includes('append-already-applied'),'Idempotent append recovery miss
 for (const marker of ['async function transactionalEdit(', 'function obviousPhpBoundaryError(', 'function verifyTaskPlacement(', 'LINT_REAL:', 'TEXTO_DUPLICADO:', 'const unverifiedExecutable=']) assert(agent.includes(marker),'Transactional guard missing: '+marker);
 // Run this addition from the existing validate:v281 gate. Never remove the old
 // v281 tests, whose expectations and compatibility remain important.
-execFileSync(process.execPath,['--test','scripts/test-developer-autonomous-v281-recovery.js','scripts/test-developer-autonomous-v281-transactional.js'],{cwd:root,stdio:'inherit',timeout:90000});
+execFileSync(process.execPath,['--test','scripts/test-developer-autonomous-v281-recovery.js','scripts/test-developer-autonomous-v281-transactional.js','scripts/test-developer-webv2-control.js','scripts/test-developer-webv2-boot.js'],{cwd:root,stdio:'inherit',timeout:90000});
 console.log('Nexa 2.8.1 integration, version synchronization, recovery and stable Electron chain: OK');
