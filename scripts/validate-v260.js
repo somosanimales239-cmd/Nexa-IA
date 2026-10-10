@@ -21,5 +21,5 @@ must(pkg.version==='2.8.1'&&pkg.main==='main-v203.js','Versión nueva incorrecta
 must(manifest.application_version===pkg.version&&manifest.build===pkg.version,'Manifiesto versión desactualizado');
 for(const k of ['validate:v260','test:v260','validate:v251','test:v251','validate:v250','test:v250','test:v280'])must(Boolean(pkg.scripts?.[k]),'Script perdido: '+k);
 must(manifest.features?.includes('developer-qwen2.5-coder-7b'),'Modelo previo desapareció');
-must(manifest.features?.includes('developer-autonomous-v281'),'Falta declarar nuevo agent en manifiesto');
+must(manifest.features?.includes('developer-autonomous-v281-reliability'),'Falta declarar agente v281 de confiabilidad en manifiesto');
 console.log('v2.6 runtime preserved; autonomous v2.8.0 integrated and versions consistent: OK');

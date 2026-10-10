@@ -22,8 +22,13 @@ must(fs.existsSync(path.join(root,'lib','developer-runtime-v'+match[1]+'.js')),'
 for(const token of ['this.developer=new DeveloperRuntime',"startsWith('developer.')",'runDeveloper(job)','developerConfigPath','developer:artifact','developer:progress'])must(agent.includes(token),'Hosted Web v250 behavior perdido: '+token);
 const main=read('main-v203.js'),newAgent=read('lib/developer-autonomous-v280.js');
 must(main.includes("require('./main-v198.js')")&&main.includes("loadFile(path.join(__dirname, 'src', 'index.html'))"),'Main perdió cadena estable de Electron');
-must(main.includes("require('./lib/developer-autonomous-v280').install(HostedWebAgent)"),'Agente v280 no enlazado');
-must(newAgent.includes("const VERSION = '2.8.0'"),'Agente v280 versión incorrecta');
-must(pkg.version==='2.8.0'&&proj.application_version===pkg.version&&proj.build===pkg.version,'Paquete y manifiesto desincronizados');
+// v280 remains present for compatibility; the active hook may be v281 or newer.
+const activeAgent = main.match(/require\(['"]\.\/lib\/developer-autonomous-v(\d+)['"]\)\.install\(HostedWebAgent\)/);
+must(activeAgent,'Ningún agente autónomo está enlazado en Windows');
+const activeAgentFile='lib/developer-autonomous-v'+activeAgent[1]+'.js';
+must(fs.existsSync(path.join(root,activeAgentFile)),'Falta agente autónomo activo: '+activeAgentFile);
+must(read(activeAgentFile).includes("const VERSION = '"+pkg.version+"'"),'Agente autónomo activo y paquete tienen versiones diferentes');
+must(newAgent.includes("const VERSION = '2.8.0'"),'Agente v280 de compatibilidad incorrecto');
+must(proj.application_version===pkg.version&&proj.build===pkg.version,'Paquete y manifiesto desincronizados');
 for(const name of ['developer-runtime-v250','developer-controlled-terminal','developer-electron-browser-agent','developer-semantic-code-index','developer-persistent-workflows'])must(proj.features?.includes(name),'Feature estable v250 perdida: '+name);
 console.log('Contratos Developer v250 preservados; agente nuevo v280 separado: OK');
