@@ -6,10 +6,10 @@ const { ipcMain, BrowserWindow, app } = require('electron');
 const { HostedWebAgent } = require('./lib/hosted-web-agent-v203');
 const HostedWebFastChat = require('./lib/hosted-web-fastchat-v204');
 
-// Dedicated, strictly opt-in autonomous Developer runner v2.8.0.
+// Dedicated, strictly opt-in autonomous Developer runner v2.8.1.
 // It ONLY intercepts developer.agent.*; all other traffic is delegated unchanged.
 try {
-  require('./lib/developer-autonomous-v280').install(HostedWebAgent);
+  require('./lib/developer-autonomous-v281').install(HostedWebAgent);
 } catch (error) {
   // Never break Nexa's existing working Chat, Image Studio or Hosted Web Agent.
   console.error('[Nexa Developer isolated agent unavailable]', error?.message || error);
@@ -38,7 +38,7 @@ let hostedAgent = null;
 app.whenReady().then(() => {
   if (hostedAgent) return;
   HostedWebFastChat.wrapCapturedChatHandler(capturedHandlers);
-  hostedAgent = new HostedWebAgent({ handlers: capturedHandlers, version: '2.8.0' });
+  hostedAgent = new HostedWebAgent({ handlers: capturedHandlers, version: '2.8.1' });
   setTimeout(() => hostedAgent.start().catch(() => {}), 1200);
 }).catch(() => {});
 
