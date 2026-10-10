@@ -54,6 +54,21 @@
     a.download='NEXA_QWEN_CAMBIOS_'+out.jobId+'.zip';a.style.display='inline-block';a.click();
     return a.download;
   }
+  // A failed or incomplete run may still contain useful staged changes.
+  // Never download them automatically or describe them as a verified build.
+  function offerPartialZip(out,progress){
+    const dock=document.getElementById('chatDeveloperDock');if(!dock)return;
+    let btn=document.getElementById('nexaPartialZip281');
+    if(!btn){btn=document.createElement('button');btn.type='button';btn.id='nexaPartialZip281';dock.appendChild(btn);}
+    btn.textContent='📦 Descargar ZIP provisional (no certificado)';
+    btn.style.cssText='display:inline-block;margin:6px;padding:8px 12px;border:1px solid #c79b37;border-radius:8px;';
+    btn.onclick=async()=>{
+      if(!confirm('Este ZIP contiene cambios PROVISIONALES de un trabajo no terminado. Solo descárgalo para revisarlos; NO lo instales ni reemplaces archivos originales. ¿Continuar?'))return;
+      btn.disabled=true;
+      try{await download(out,progress);}catch(e){alert('No se pudo verificar y descargar el ZIP: '+String(e.message||e));}
+      finally{btn.disabled=false;}
+    };
+  }
   function installStopButton(){
     const dock=document.getElementById('chatDeveloperDock');if(!dock)return null;
     let btn=document.getElementById('nexaAutonomousStop');
@@ -99,7 +114,10 @@
       if(out.error)summary+='\n**Error exacto:** '+String(out.error);
       if(out.summary)summary+='\n**Resumen Qwen:** '+String(out.summary);
       if(zipName)summary+='\n**ZIP candidato descargado:** '+zipName;
-      if(out.zip&&!isCandidate)summary+='\n**Hay archivos provisionales, pero NO se han descargado porque el trabajo no terminó.**';
+      if(out.zip&&!isCandidate){
+        offerPartialZip(out,progress);
+        summary+='\n**ZIP provisional disponible:** usa el botón «Descargar ZIP provisional (no certificado)» para revisarlo. NO lo instales sin validación.';
+      }
       return {finished:false,artifactOnly:true,failed:!isCandidate,status,changedFiles:changed.map(x=>x.path),qa:null,summary,artifacts:[]};
     }finally{active=false;currentJob='';if(stopButton)stopButton.style.display='none';}
   }

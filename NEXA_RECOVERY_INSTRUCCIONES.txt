@@ -1,0 +1,60 @@
+NEXA AI v2.8.1 — RECUPERACION APPEND / BUILD #147
+FUENTE: GitHub Nexa-IA; commit a7811043e6a06e3b478db885947440bc913a210b
+BASADO EN: GitHub Actions #61, Build 147 v2.8.1, compilacion exitosa.
+
+NO REEMPLAZAR LA INSTALACION MANUALMENTE. NO CAMBIAR ARCHIVOS DEL DISCO D:.
+
+Windows (NEXA_V281_RECOVERY_WINDOWS_BUILD147_COMPLETO.zip):
+- Es un paquete CONSOLIDADO de fuentes Electron del Build #147 y del controlador
+  corregido. No es un instalador .EXE. Cargar como actualizacion de archivos
+  en Nexa App Builder Pro, sobre el repositorio Nexa-IA MAIN correspondiente al
+  Build #61/147, y solicitar nuevo build Windows por GitHub Actions.
+- Preserva el package.json COMPLETO, nexa.project.json, package-lock.json,
+  workflow de GitHub y validadores originales presentes en MAIN.
+- NO contiene package.json porque el extraido del instalador fue reducido por
+  electron-builder y NO debe reemplazar el package.json completo de GitHub.
+- Incluye scripts/validate-v281-release.js actualizado y
+  scripts/test-developer-autonomous-v281-recovery.js con 5 regresiones nuevas.
+- Los archivos no relacionados con el Developer provienen del mismo EXE Build
+  #147, sin diseno ni logica nueva intencional.
+
+Web (NEXA_V281_RECOVERY_HOSTINGER_WEB.zip):
+- Basado en el ZIP Nexa AI Web enviado en esta conversacion.
+- Unicamente archivos PHP/JS cambiados; NUNCA datos ni bases SQLite.
+- Actualiza index.php para bust de cache del bridge y el workbench acepta
+  runtimes 2.5.1/2.6.0.
+- La web permite descargar explicitamente un ZIP PROVISIONAL de trabajo fallido;
+  sigue rechazando declararlo como completo y exige confirmacion.
+
+CORRECCION DEL CONTROLADOR:
+1. Append duplicado ya aplicado no contabiliza como accion invalida.
+2. Repeticiones guardadas en la copia se revisan contra el objetivo.
+3. Una solicitud literal y sencilla de agregar linea al final puede concluir
+   con status review_required si se prueba la condicion concreta en archivo real.
+4. Tareas complejas NO se dan por completas por un simple append.
+5. ZIP de archivos provisionales puede conservarse y revisarse con advertencia.
+6. El proyecto ORIGINAL nunca se escribe desde el agente.
+
+QA DE ESTA ENTREGA:
+- 5 pruebas nuevas simulando respuestas Qwen: aprobadas.
+- Node syntax check: 73 archivos JS del paquete fuente, 0 fallos.
+- PHP lint: 49 archivos PHP del backup Nexa Web, 0 fallos.
+- Comprobaciones de integridad de origen app.asar mediante hashes SHA-256.
+- ZIP generado y verificado como contenedor valido.
+
+NO SE HA PROBADO EN ESTE ENTORNO:
+- Nuevo instalador Electron Windows ni GitHub Actions posterior a esta entrega.
+- Ollama real del usuario con Qwen local; las pruebas usan respuestas simuladas.
+- UI de Hostinger desplegada, permisos y red reales.
+No es correcto afirmar que el Developer autonomo multiarchivo ha sido certificado.
+
+ORDEN PARA INSTALAR:
+1. Respaldar cualquier cambio en Hostinger y GitHub.
+2. En Nexa App Builder Pro cargar el ZIP Windows consolidado sobre el repositorio
+   ya existente. Revisar diffs; compilar en GitHub Actions. NO instalar una
+   compilacion fallida.
+3. Descargar e instalar el EXE de un nuevo build EXITOSO.
+4. Subir solo los tres archivos del ZIP Hostinger a public_html respetando rutas.
+5. Recargar web con Ctrl+F5; comprobar estado agente y hacer prueba README
+   primero, sin modificar el proyecto original.
+6. Si falla, compartir log y trabajo, no repetir instalaciones a ciegas.
