@@ -1,14 +1,19 @@
 'use strict';
 
-// Nexa AI v2.0.3 — Hosted Web Agent runtime/status synchronization fix
-// Hosted Web Fast Chat hotfix: simple conversational messages skip unnecessary
-// web-planning and unrelated knowledge retrieval, without changing Nexa's
-// normal intelligence path for substantive questions.
-
+// Nexa AI — Hosted Web Agent wrapper. Existing Chat/Image handlers remain intact.
 const path = require('path');
 const { ipcMain, BrowserWindow, app } = require('electron');
-const { HostedWebAgent, VERSION } = require('./lib/hosted-web-agent-v203');
+const { HostedWebAgent } = require('./lib/hosted-web-agent-v203');
 const HostedWebFastChat = require('./lib/hosted-web-fastchat-v204');
+
+// Dedicated, strictly opt-in autonomous Developer runner v2.8.0.
+// It ONLY intercepts developer.agent.*; all other traffic is delegated unchanged.
+try {
+  require('./lib/developer-autonomous-v280').install(HostedWebAgent);
+} catch (error) {
+  // Never break Nexa's existing working Chat, Image Studio or Hosted Web Agent.
+  console.error('[Nexa Developer isolated agent unavailable]', error?.message || error);
+}
 
 const capturedHandlers = new Map();
 const nativeHandle = ipcMain.handle.bind(ipcMain);
@@ -33,7 +38,7 @@ let hostedAgent = null;
 app.whenReady().then(() => {
   if (hostedAgent) return;
   HostedWebFastChat.wrapCapturedChatHandler(capturedHandlers);
-  hostedAgent = new HostedWebAgent({ handlers: capturedHandlers, version: VERSION });
+  hostedAgent = new HostedWebAgent({ handlers: capturedHandlers, version: '2.8.0' });
   setTimeout(() => hostedAgent.start().catch(() => {}), 1200);
 }).catch(() => {});
 

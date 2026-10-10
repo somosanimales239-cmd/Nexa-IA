@@ -1,31 +1,25 @@
 'use strict';
-const fs=require('fs');
-const path=require('path');
-const root=path.join(__dirname,'..');
-const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
-const must=(v,m)=>{if(!v)throw new Error(m);};
-for(const rel of ['lib/developer-runtime-v260.js','lib/hosted-web-agent-v203.js','package.json','nexa.project.json']){
-  const full=path.join(root,rel);must(fs.existsSync(full),'Missing v2.6.0 file: '+rel);
-  const src=fs.readFileSync(full,'utf8');must(!src.includes('<<<<<<<')&&!src.includes('>>>>>>>'),'Conflict marker: '+rel);
+// Preserve v2.6 dedicated Qwen Coder while allowing v2.8 isolated agent.
+const fs=require('fs'),path=require('path'),root=path.join(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const must=(v,m)=>{if(!v)throw Error(m)};
+for(const rel of ['lib/developer-runtime-v260.js','lib/hosted-web-agent-v203.js','lib/developer-autonomous-v280.js','main-v203.js','package.json','nexa.project.json']){
+ must(fs.existsSync(path.join(root,rel)),'Falta dependencia Developer: '+rel);
+ const src=read(rel);must(!src.includes('<<<<<<<')&&!src.includes('>>>>>>>'),'Conflicto de merge: '+rel);
 }
 const runtime=read('lib/developer-runtime-v260.js');
-for(const token of [
-  "const VERSION = '2.6.0'",
-  "model:'qwen2.5-coder:7b'",
-  "case'developer.ai.status'",
-  "case'developer.ai.generate'",
-  'async aiGenerate(payload={},hooks={})',
-  "'api/chat'",
-  'Dedicated Nexa Developer coder brain'
-]) must(runtime.includes(token),'Runtime v2.6.0 token missing: '+token);
-const agent=read('lib/hosted-web-agent-v203.js');
-must(agent.includes("require('./developer-runtime-v260')"),'Hosted agent must load developer-runtime-v260');
-must(agent.includes("const VERSION = '2.6.0'"),'Hosted agent version must be 2.6.0');
-const pkg=JSON.parse(read('package.json'));
-must(pkg.version==='2.6.0','package version must be 2.6.0');
-must(pkg.main==='main-v203.js','main entry must remain main-v203.js');
-for(const k of ['validate:v260','test:v260','validate:v251','test:v251','validate:v250','test:v250'])must(Boolean(pkg.scripts&&pkg.scripts[k]),'Missing script '+k);
-const project=JSON.parse(read('nexa.project.json'));
-must(String(project.application_version)==='2.6.0','nexa.project application_version mismatch');
-must(project.features.includes('developer-qwen2.5-coder-7b'),'Missing qwen coder project feature');
-console.log('Nexa AI v2.6.0 Dedicated Developer Coder validation: OK');
+for(const token of ["const VERSION = '2.6.0'","model:'qwen2.5-coder:7b'","case'developer.ai.status'","case'developer.ai.generate'",'async aiGenerate(payload={},hooks={})',"'api/chat'",'Dedicated Nexa Developer coder brain'])must(runtime.includes(token),'v260 feature missing: '+token);
+const hosted=read('lib/hosted-web-agent-v203.js');
+must(hosted.includes("require('./developer-runtime-v260')"),'Hosted agent dejó de cargar el runtime v260');
+must(hosted.includes("const VERSION = '2.6.0'"),'Runtime stable v260 unexpectedly changed');
+const main=read('main-v203.js');
+must(main.includes("require('./lib/developer-autonomous-v280').install(HostedWebAgent)"),'Activación explícita v280 perdida');
+const next=read('lib/developer-autonomous-v280.js');
+for(const t of ["const VERSION = '2.8.0'", "const MODEL = 'qwen2.5-coder:7b'", "type==='developer.agent.status'", "type!=='developer.agent.run'", "type==='developer.agent.artifact'", 'autonomous-v280','watchActive=async'])must(next.includes(t),'Agente v280 falta: '+t);
+const pkg=JSON.parse(read('package.json')),manifest=JSON.parse(read('nexa.project.json'));
+must(pkg.version==='2.8.0'&&pkg.main==='main-v203.js','Versión nueva incorrecta');
+must(manifest.application_version===pkg.version&&manifest.build===pkg.version,'Manifiesto versión desactualizado');
+for(const k of ['validate:v260','test:v260','validate:v251','test:v251','validate:v250','test:v250','test:v280'])must(Boolean(pkg.scripts?.[k]),'Script perdido: '+k);
+must(manifest.features?.includes('developer-qwen2.5-coder-7b'),'Modelo previo desapareció');
+must(manifest.features?.includes('developer-autonomous-v280'),'Falta declarar nuevo agent en manifiesto');
+console.log('v2.6 runtime preserved; autonomous v2.8.0 integrated and versions consistent: OK');
