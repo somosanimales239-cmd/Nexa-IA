@@ -1,0 +1,95 @@
+NEXA v2.8.1 Build #149 — Informe verificable
+Falla real: test-developer-autonomous-v281.js:41, Expected:1 Actual:0
+Cambio: se actualiza el escenario de regresión, no se elimina; conserva original, rechazo LINT_REAL, reparación desde estado original y entrega candidata.
+CÓDIGO DE PRODUCCIÓN: íntegro, copiado del paquete consolidado anterior.
+NUEVAS PRUEBAS: 34/34 OK, ejecutadas en entorno Linux Node.js v22.16.0; CI usa Windows Node 24.x.
+COMPILACIÓN WINDOWS: PENDIENTE (no ejecutada aquí).
+PRUEBA CON OLLAMA REAL: PENDIENTE.
+GitHub no permitió subir una rama correctiva: 403 Resource not accessible by integration. Por ello se entrega paquete manual para App Builder Pro.
+
+t transaccional revierte JS inválido y permite recuperación real de Qwen
+  ---
+  duration_ms: 153.10166
+  type: 'test'
+  ...
+# Subtest: v2.8.1 autenticidad de versión y diagnóstico con Ollama local simulado
+ok 23 - v2.8.1 autenticidad de versión y diagnóstico con Ollama local simulado
+  ---
+  duration_ms: 150.931659
+  type: 'test'
+  ...
+# Subtest: Watchdog mantiene tareas Developer vivas hasta 17 min, pero delega Chat intacto
+ok 24 - Watchdog mantiene tareas Developer vivas hasta 17 min, pero delega Chat intacto
+  ---
+  duration_ms: 0.833697
+  type: 'test'
+  ...
+# Subtest: ruta Windows reservada y rutas con doble punto son bloqueadas
+ok 25 - ruta Windows reservada y rutas con doble punto son bloqueadas
+  ---
+  duration_ms: 0.518622
+  type: 'test'
+  ...
+# Subtest: interrupción cancela llamada Qwen larga sin tocar la fuente
+ok 26 - interrupción cancela llamada Qwen larga sin tocar la fuente
+  ---
+  duration_ms: 62.49681
+  type: 'test'
+  ...
+# Subtest: recorrido completo Web Agent -> Ollama simulado -> cambios aislados -> ZIP fragmentado
+ok 27 - recorrido completo Web Agent -> Ollama simulado -> cambios aislados -> ZIP fragmentado
+  ---
+  duration_ms: 111.388149
+  type: 'test'
+  ...
+# Subtest: Qwen 7B aliases JSON: list/read_file/append_line/finish edit README only in private copy
+ok 28 - Qwen 7B aliases JSON: list/read_file/append_line/finish edit README only in private copy
+  ---
+  duration_ms: 3.646055
+  type: 'test'
+  ...
+# Subtest: Los errores no se acumulan después de una acción exitosa y queda diagnóstico real
+ok 29 - Los errores no se acumulan después de una acción exitosa y queda diagnóstico real
+  ---
+  duration_ms: 99.834852
+  type: 'test'
+  ...
+# Subtest: Seis errores consecutivos bloquean y conservan todas las acciones rechazadas
+ok 30 - Seis errores consecutivos bloquean y conservan todas las acciones rechazadas
+  ---
+  duration_ms: 6.660915
+  type: 'test'
+  ...
+# Subtest: No se puede escribir fuera de copia y append no duplica contenido existente
+ok 31 - No se puede escribir fuera de copia y append no duplica contenido existente
+  ---
+  duration_ms: 0.778935
+  type: 'test'
+  ...
+# Subtest: Qwen puede devolver herramienta estructurada con argumentos anidados, sin permitir herramientas peligrosas
+ok 32 - Qwen puede devolver herramienta estructurada con argumentos anidados, sin permitir herramientas peligrosas
+  ---
+  duration_ms: 0.336761
+  type: 'test'
+  ...
+# Subtest: Si PHP no está instalado no envía a Qwen una falsa reparación de sintaxis
+ok 33 - Si PHP no está instalado no envía a Qwen una falsa reparación de sintaxis
+  ---
+  duration_ms: 12.343254
+  type: 'test'
+  ...
+# Subtest: Archivos JSON inválidos se detectan realmente y archivos CSS entran solo a revisión
+ok 34 - Archivos JSON inválidos se detectan realmente y archivos CSS entran solo a revisión
+  ---
+  duration_ms: 4.954876
+  type: 'test'
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1274.47826

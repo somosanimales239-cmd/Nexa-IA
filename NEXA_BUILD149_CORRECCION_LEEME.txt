@@ -1,0 +1,36 @@
+NEXA AI WINDOWS 2.8.1 — CORRECCIÓN CONSOLIDADA DE BUILD #149
+2026-10-10
+
+ORIGEN COMPROBADO
+Repositorio: somosanimales239-cmd/Nexa-IA
+Run fallido: https://github.com/somosanimales239-cmd/Nexa-IA/actions/runs/38082643509
+Commit base para aplicar este paquete: efc0e2ff655b0f835f344ff9920d22d1fbcb3691
+Problema: scripts/test-developer-autonomous-v281.js, línea 41 (0 !== 1).
+
+CAUSA
+El módulo lib/developer-autonomous-v281.js ahora revierte inmediatamente un JS inválido.
+El test antiguo suponía que el JS inválido quedaba aplicado hasta una reparación posterior y
+esperaba repairAttempts=1. Por eso falló el test dentro del comando npm run build:win.
+
+CORRECCIÓN
+Se conserva TODO el paquete previo de Nexa Windows (incluyendo Developer Runtime y
+controlador transaccional) y se añade EL ARCHIVO COMPLETO CORREGIDO del test heredado.
+El test ahora comprueba que la edición inválida se revierte, el proyecto original queda
+intacto, Qwen relee el archivo, aplica una edición válida, pasa el linter y genera ZIP.
+No se omite ni desactiva ninguna prueba heredada.
+
+COMPROBACIONES REALIZADAS
+- SHA de fuentes de GitHub contrastado con el ZIP cargado en Build #149.
+- 34/34 pruebas de Developer localizadas aprobadas (test heredado + recuperación + PHP transaccional).
+- Sintaxis Node JS de los archivos incluidos: revisar registro QA adjunto.
+- Integridad de ZIP y SHA-256 de cada miembro incluidos.
+
+PROCEDIMIENTO
+1. App Builder Pro -> actualizar Nexa Windows con ESTE ZIP COMPLETO, sobre el commit base.
+2. No mezclar con parches antiguos de Build #149 ni aplicar individualmente tres archivos.
+3. Ejecutar GitHub Actions. Solo instalar si TODOS los jobs terminan SUCCESS.
+4. Probar con Ollama local real, qwen2.5-coder:7b, en copia de RentaDeAutos.
+5. Si el build falla nuevamente, recuperar el log exacto del job y no reinstalar.
+
+LIMITACIÓN: no puedo ejecutar electron-builder para Windows ni Qwen local del usuario desde este entorno.
+No se han modificado directamente GitHub, Hostinger ni Windows.

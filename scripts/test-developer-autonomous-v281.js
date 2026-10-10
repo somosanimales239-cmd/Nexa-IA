@@ -31,14 +31,21 @@ test('artefacto por fragmentos con SHA verificado, sin filtrar archivos externos
  assert.equal(crypto.createHash('sha256').update(Buffer.from(one.chunkBase64,'base64')).digest('hex'),one.chunkSha256);
  assert.throws(()=>a.readArtifact(x.developer,{jobId:'../secrets',part:9}));
 });
-test('lint detecta JS inválido y Qwen puede repararlo en máximo dos ciclos',async()=>{
- const {out}=await mockRun([
+test('lint transaccional revierte JS inválido y permite recuperación real de Qwen',async()=>{
+ const {x,out}=await mockRun([
   {action:'replace',path:'clientes.js',find:'const greeting = "hola";',replace:'const greeting = ;'},
-  {action:'finish',summary:'fallido'},
-  {action:'replace',path:'clientes.js',find:'const greeting = ;',replace:'const greeting = "arreglado";'},
+  {action:'read',path:'clientes.js'},
+  {action:'replace',path:'clientes.js',find:'const greeting = "hola";',replace:'const greeting = "arreglado";'},
   {action:'finish',summary:'corregido'}
  ]);
- assert.equal(out.repairAttempts,1);assert.equal(out.qa.failed.length,0);assert.equal(out.status,'review_required');
+ assert.equal(out.repairAttempts,0,'La edición inválida se rechaza ANTES del ciclo de reparación final');
+ assert.equal(out.qa.failed.length,0);assert.equal(out.status,'review_required');
+ assert.equal(out.files.length,1);
+ assert.equal(fs.readFileSync(path.join(x.project,'clientes.js'),'utf8'),'const greeting = "hola";\n','El proyecto original debe mantenerse intacto');
+ assert.equal(fs.readFileSync(path.join(out.workspace,'clientes.js'),'utf8'),'const greeting = "arreglado";\n','Sólo debe conservarse la edición válida');
+ assert.equal(out.invalidActions.length,1,'El rechazo de la edición inválida debe quedar registrado');
+ assert.match(out.invalidActions[0].error,/LINT_REAL/,'Debe registrarse el error real del linter');
+ assert(out.zip&&fs.existsSync(out.zip.path),'Debe entregar un ZIP candidato verificable');
 });
 
 
