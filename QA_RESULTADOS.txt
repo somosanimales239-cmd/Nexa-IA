@@ -1,0 +1,24 @@
+NEXA AI 2.8.1 AIDER BRIDGE — INFORME QA DE FUENTES
+
+RESULTADOS VERIFICADOS LOCALMENTE (LINUX NODE v22.16.0, PYTHON 3.x):
+- JavaScript node --check main-v203.js y lib/nexa-aider-worker.js: PASS.
+- JavaScript node --check scripts/validate-v281-release.js: PASS.
+- Node test-nexa-aider-worker.js + test-nexa-aider-boot.js: 10 PASS / 0 FAIL.
+  Incluye: agente normal/segundo agente intactos; nueva cola exclusiva; HTTPS; token; workerId persistente; rechazo rutas peligrosas; reportes erroneos; materializacion desde ASAR simulada en filesystem; reparación SHA.
+- Python unittest test_nexa_aider_analyzer.py: 4 PASS / 0 FAIL.
+  Simula parser Tree-sitter; prueba mapa de símbolos/lineas/sha, paginación, symlink, ausencia de ejecución de proyecto.
+- Python py_compile lib/nexa-aider-analyzer.py: PASS.
+- PHP Lint del overlay Web: comprobado en la auditoría anterior de la web, pero NO se comprobó funcionalmente esta cola por PDO_SQLite.
+
+PENDIENTE, NO CERTIFICADO:
+- Aider instalado en la computadora real: ejecutar VERIFICAR_AIDER_ANTES_DEL_BUILD.cmd.
+- Electron con app.asar compilado y arranque real en Windows: necesita GitHub Actions/installer.
+- npm run validate de TODO GitHub main: NO ejecutado en este entorno (no hay clon completo accesible).
+- Script Python ejecutado con grep-ast/Tree-sitter 0.86.2 REAL de la PC: NO probado aquí.
+- Hostinger PHP PDO SQLite, endpoints autenticados, base de datos viva: NO probado aquí.
+- End-to-end con archivo PHP, JS, TS real: NO probado aquí.
+- Proyectos mayores a 300 archivos: el Worker acepta offset, Web actual aún no pagina.
+- Puntos 04/06/07/08/09 de Web: no implementados totalmente.
+
+NO DECLARAR UPDATE DE PRODUCCION COMPLETADO.
+Este paquete es candidato de fuentes a validar antes de instalar un UNICO EXE compilado.

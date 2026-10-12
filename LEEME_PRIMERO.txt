@@ -1,0 +1,48 @@
+NEXA AI 2.8.1 — UPDATE CONSOLIDADO DE WINDOWS: AIDER DEVELOPER
+Base fuente GitHub: somosanimales239-cmd/Nexa-IA, main a57266b3defe1fd16e5f9d2c17d3a29885964b8f, Build #151 SUCCESS ANTERIOR.
+Fecha: 11/oct/2026.
+
+IMPORTANTE: ESTE ARCHIVO NO ES UN INSTALADOR .EXE.
+Es un paquete de FUENTES completo para integrar la nueva capacidad de Aider sobre el repositorio GitHub existente mediante Nexa App Builder Pro; NO abrir un proyecto nuevo con estos archivos ni extraerlos en D:\LocalAI\NexaAI.
+NO se ha compilado todavía este código en Windows, no se ha ejecutado Aider 0.86.2 de la PC del usuario, ni se ha validado Hostinger en vivo.
+Ninguna actualización o commit se ha aplicado automáticamente a GitHub, Hostinger ni Windows.
+
+PASOS OBLIGATORIOS PARA INTENTAR UNA SOLA COMPILACION:
+1. Hacer BACKUP de datos existentes y preservar la instalación estable 2.8.1/Build 151.
+2. Extraer ESTE paquete en una carpeta temporal (NO en public_html ni el directorio de instalación Nexa).
+3. Ejecutar VERIFICAR_AIDER_ANTES_DEL_BUILD.cmd EN EL PC OFICIAL. Debe terminar AIDER PROBE OK; si falla, NO compilar.
+4. Revisar el overlay WINDOWS_SOURCE_OVERLAY: 7 fuentes finales; incluye el arranque, el worker, analizador y pruebas. Los otros archivos de GitHub se deben CONSERVAR intactos.
+5. Importar TODO el contenido de WINDOWS_SOURCE_OVERLAY como overlay de fuentes en Nexa App Builder Pro sobre el GitHub main exacto indicado; la instalación debe conservar package.json, package-lock.json, .github/workflows, nexa.project.json y el resto del repo. Comparar SHA base antes de aplicar; detener en caso de diferencias no conciliadas.
+6. Ejecutar el gate npm run validate (incluye las nuevas pruebas por validate:v281); el build de Windows debe salir SUCCESS antes de instalar.
+7. WEB_DEVELOPER_AIDER_CONSOLIDADO.zip se instala SOLO en Hostinger public_html, carpeta developer/ (no contiene base de datos). Si no está instalado el endpoint developer/aider-worker.php, Windows no podrá usar la cola Aider. Hacer backup developer/ y DB; instalar solo después de revisar en ambiente de prueba.
+8. Tras build SUCCESS instalar UN SOLO EXE y probar con copia D:\Projects\RentaDeAutos_Aider_Prueba, más el mismo proyecto importado en la Web. Sus archivos deben tener SHA-256 IGUAL para fusionar resultados.
+9. Si falla una prueba real, conservar la versión estable y su respaldo. NO insistir con varios updates; corregir ANTES de considerar aprobada la entrega.
+
+FUNCIONALIDAD WINDOWS INCLUIDA:
+- Aider Worker solo Developer, independiente de Chat/Image/Forge y colas normales.
+- POST hello/next/complete en /developer/aider-worker.php por HTTPS y token del agente existente.
+- Reutiliza preferentemente developerWebServerUrl + developerWebAgentToken, si están configurados; de lo contrario usa serverUrl + agentToken.
+- Localiza D:\LocalAI\Aider\.venv\Scripts\python.exe; usa Tree-sitter y grep-ast sin ejecutar Aider como chat, sin instalar modelos.
+- Acepta proyectos SOLO dentro de D:\Projects, bloquea rutas '..' y symlink/junction escapes, no toca originales.
+- Lee definiciones estructurales y SHA256, devuelve metadatos verificables y referencias lexicas NO RESUELTAS.
+- Paginacion por offset preparada para futuro protocolo Web sin otra actualizacion Windows; Web actual solo pide hasta 300 archivos por lote.
+- Extrae el script incluido en app.asar a HostedWeb/AiderWorker para hacerlo legible a Python, valida SHA256 y recupera si su copia está cambiada.
+- El modelo de programacion sigue EXCLUSIVAMENTE qwen2.5-coder:7b; los otros motores de Chat e imagen no se tocan.
+
+LIMITES ACTUALES QUE NO SE DEBEN OCULTAR:
+- WEB v1 Aider limita 300 archivos por job; una carpeta mayor queda review_required. Falta ampliar paginacion Web/índice para completar 06 y 07.
+- El mapa de referencias de Aider es léxico/estructural; referencias dinámicas o llamadas indirectas no pueden declararse resueltas. 04 y 09 requieren relacionamiento de lado Web.
+- 08 utiliza la seleccion actual de contexto Web; no se ha certificado un ranking completo del proyecto.
+- La calidad de la detección estructural de PHP/JS/TS real depende de los parsers instalados en D:, no probados aquí.
+- No se ha verificado el ciclo de ida y vuelta en Hostinger con PDO SQLite real.
+
+LOS 7 ARCHIVOS DE WINDOWS APLICADOS EN UN SOLO OVERLAY:
+  main-v203.js (preserva arranque original de Chat y Image Studio; solo agrega Worker independiente)
+  lib/nexa-aider-worker.js (nuevo)
+  lib/nexa-aider-analyzer.py (nuevo)
+  scripts/validate-v281-release.js (gate existente se extiende sin suprimir tests anteriores)
+  scripts/test-nexa-aider-worker.js (nuevo)
+  scripts/test-nexa-aider-boot.js (nuevo)
+  scripts/test_nexa_aider_analyzer.py (nuevo, QA adicional de Python)
+
+REGLA: NO instalar y NO afirmar finalizado al 100% si cualquiera de los checks reales está pendiente o falla.

@@ -1,0 +1,12 @@
+{
+  "baseGitCommit": "a57266b3defe1fd16e5f9d2c17d3a29885964b8f",
+  "files": {
+    "main-v203.js": "a3e01923b14e0c9fb8451be38ed812682af12c6afb4775583f09cf78d3761850",
+    "scripts/validate-v281-release.js": "90a742f0d8029f6581d121c8117e2ab47feb2391b937ca2903c97793ca458754",
+    "scripts/test-nexa-aider-boot.js": "86609b5853b040e0341b939684b1f8ee56ae1cd4de68252826b47930b0d9baeb",
+    "scripts/test_nexa_aider_analyzer.py": "f2e3269221cdac795b6c5ae46a8b7abaefed2f192afb1765f3afd23e260e8333",
+    "scripts/test-nexa-aider-worker.js": "1413e8e111442c6ef77e6a0b1f70de7c73603fda428d2c546202f6031b606239",
+    "lib/nexa-aider-analyzer.py": "b61d3532c65294c58e63792647dfcb877341401185d869e9fced9153bd6186b6",
+    "lib/nexa-aider-worker.js": "2d75d98b2fb29b0578f66fe2ff5ac8859084d1fd8d8285b094b19ea653722a89"
+  }
+}
