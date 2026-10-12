@@ -3,7 +3,7 @@
 // Nexa AI — Hosted Web Agent wrapper. Existing Chat/Image handlers remain intact.
 const path = require('path');
 const { ipcMain, BrowserWindow, app } = require('electron');
-const { HostedWebAgent, loadConfig } = require('./lib/hosted-web-agent-v203');
+const { HostedWebAgent, loadConfig, configPath } = require('./lib/hosted-web-agent-v203');
 const HostedWebFastChat = require('./lib/hosted-web-fastchat-v204');
 
 // Dedicated, strictly opt-in autonomous Developer runner v2.8.1.
@@ -45,6 +45,7 @@ require('./main-v198.js');
 
 let hostedAgent = null;
 let developerWebAgent = null;
+let aiderWorker = null;
 app.whenReady().then(() => {
   if (hostedAgent) return;
   HostedWebFastChat.wrapCapturedChatHandler(capturedHandlers);
@@ -65,9 +66,21 @@ app.whenReady().then(() => {
       setTimeout(()=>developerWebAgent?.start().catch(()=>{}),1700);
     }
   }catch(error){console.error('[Nexa secondary Developer Web unavailable]',error?.message||error)}
+  // Independent Aider read-only worker. Does not intercept Electron IPC, normal
+  // Hosted Web Agent queue, Qwen, Chat or Image Studio. Failures are contained.
+  try {
+    const {AiderWorker}=require('./lib/nexa-aider-worker');
+    aiderWorker=new AiderWorker({
+      loadConfig,
+      configDir:()=>path.dirname(configPath()),
+      allowedRoots:['D:\\Projects'],
+    });
+    setTimeout(()=>aiderWorker?.start(),2300);
+  }catch(error){console.error('[Nexa isolated Aider Worker unavailable]',error?.message||error)}
 }).catch(() => {});
 
 app.on('before-quit', () => {
   try { hostedAgent?.stop(); } catch (_) {}
   try { developerWebAgent?.stop(); } catch (_) {}
+  try { aiderWorker?.stop(); } catch (_) {}
 });

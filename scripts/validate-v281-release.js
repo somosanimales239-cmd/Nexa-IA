@@ -21,7 +21,11 @@ assert(project.features.includes('developer-autonomous-v281-reliability'));
 assert(agent.includes('verifiedSingleAppendGoal('),'Append recovery guard missing');
 assert(agent.includes('append-already-applied'),'Idempotent append recovery missing');
 for (const marker of ['async function transactionalEdit(', 'function obviousPhpBoundaryError(', 'function verifyTaskPlacement(', 'LINT_REAL:', 'TEXTO_DUPLICADO:', 'const unverifiedExecutable=']) assert(agent.includes(marker),'Transactional guard missing: '+marker);
-// Run this addition from the existing validate:v281 gate. Never remove the old
-// v281 tests, whose expectations and compatibility remain important.
+// Run original release integration tests without disabling or replacing any gate.
 execFileSync(process.execPath,['--test','scripts/test-developer-autonomous-v281-recovery.js','scripts/test-developer-autonomous-v281-transactional.js','scripts/test-developer-webv2-control.js','scripts/test-developer-webv2-boot.js'],{cwd:root,stdio:'inherit',timeout:90000});
-console.log('Nexa 2.8.1 integration, version synchronization, recovery and stable Electron chain: OK');
+// New isolated Aider tests: fail the existing gate if the Worker regresses.
+for(const rel of ['lib/nexa-aider-worker.js','lib/nexa-aider-analyzer.py','scripts/test-nexa-aider-worker.js'])assert(fs.existsSync(path.join(root,rel)),'Missing Aider file: '+rel);
+assert(main.includes("require('./lib/nexa-aider-worker')"),'Aider Worker is not connected to Windows bootstrap');
+execFileSync(process.execPath,['--check','lib/nexa-aider-worker.js'],{cwd:root,stdio:'inherit'});
+execFileSync(process.execPath,['--test','scripts/test-nexa-aider-worker.js','scripts/test-nexa-aider-boot.js'],{cwd:root,stdio:'inherit',timeout:30000});
+console.log('Nexa 2.8.1 integration, version synchronization, recovery, Aider isolation and stable Electron chain: OK');
